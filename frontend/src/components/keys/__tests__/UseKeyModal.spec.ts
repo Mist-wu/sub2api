@@ -17,7 +17,7 @@ vi.mock('@/composables/useClipboard', () => ({
 import UseKeyModal from '../UseKeyModal.vue'
 
 describe('UseKeyModal', () => {
-  it('renders GPT-5.4 mini entry in OpenCode config', async () => {
+  it('renders GPT-5.4 responses entry in POST example', async () => {
     const wrapper = mount(UseKeyModal, {
       props: {
         show: true,
@@ -37,17 +37,19 @@ describe('UseKeyModal', () => {
       }
     })
 
-    const opencodeTab = wrapper.findAll('button').find((button) =>
-      button.text().includes('keys.useKeyModal.cliTabs.opencode')
+    const postTab = wrapper.findAll('button').find((button) =>
+      button.text().includes('keys.useKeyModal.cliTabs.post')
     )
 
-    expect(opencodeTab).toBeDefined()
-    await opencodeTab!.trigger('click')
+    expect(postTab).toBeDefined()
+    await postTab!.trigger('click')
     await nextTick()
 
     const codeBlock = wrapper.find('pre code')
     expect(codeBlock.exists()).toBe(true)
-    expect(codeBlock.text()).toContain('"name": "GPT-5.4 Mini"')
-    expect(codeBlock.text()).not.toContain('"name": "GPT-5.4 Nano"')
+    expect(wrapper.text()).toContain('POST /v1/responses')
+    expect(wrapper.text()).toContain('POST /v1/images/generations (gpt-image-2)')
+    expect(codeBlock.text()).toContain('"model": "gpt-5.4"')
+    expect(wrapper.text()).not.toContain('opencode.json')
   })
 })

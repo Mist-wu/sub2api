@@ -691,7 +691,7 @@ export default {
         geminiCli: 'Gemini CLI',
         codexCli: 'Codex CLI',
         codexCliWs: 'Codex CLI (WebSocket)',
-        opencode: 'OpenCode',
+        post: 'POST',
       },
       antigravity: {
         description: 'Configure API access for Antigravity group. Select the configuration method based on your client.',
@@ -702,13 +702,12 @@ export default {
       },
       gemini: {
         description: 'Add the following environment variables to your terminal profile or run directly in terminal to configure Gemini CLI access.',
-        modelComment: 'If you have Gemini 3 access, you can use: gemini-3-pro-preview',
+        modelComment: 'Available Gemini 3.1 Pro: gemini-3.1-pro-preview',
         note: 'These environment variables will be active in the current terminal session. For permanent configuration, add them to ~/.bashrc, ~/.zshrc, or the appropriate configuration file.',
       },
-      opencode: {
-        title: 'OpenCode Example',
-        subtitle: 'opencode.json',
-        hint: 'Config path: ~/.config/opencode/opencode.json (or opencode.jsonc), create if not exists. Use default providers (openai/anthropic/google) or custom provider_id. API Key can be configured directly or via /connect command. This is an example, adjust models and options as needed.',
+      post: {
+        title: 'POST Request Example',
+        subtitle: 'Generic HTTP Request',
       },
     },
     customKeyLabel: 'Custom Key',
