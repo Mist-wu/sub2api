@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
+	dbent "github.com/Mist-wu/sub2api/ent"
+	"github.com/Mist-wu/sub2api/ent/redeemcode"
 )
 
 func normalizeOAuthSignupSource(signupSource string) string {

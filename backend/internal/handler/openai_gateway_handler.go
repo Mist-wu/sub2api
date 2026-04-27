@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	pkghttputil "github.com/Wei-Shaw/sub2api/internal/pkg/httputil"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
-	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Mist-wu/sub2api/internal/config"
+	pkghttputil "github.com/Mist-wu/sub2api/internal/pkg/httputil"
+	"github.com/Mist-wu/sub2api/internal/pkg/ip"
+	"github.com/Mist-wu/sub2api/internal/pkg/logger"
+	middleware2 "github.com/Mist-wu/sub2api/internal/server/middleware"
+	"github.com/Mist-wu/sub2api/internal/service"
 
 	coderws "github.com/coder/websocket"
 	"github.com/gin-gonic/gin"

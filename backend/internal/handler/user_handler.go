@@ -4,10 +4,10 @@ import (
 	"context"
 	"strings"
 
-	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
-	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Mist-wu/sub2api/internal/handler/dto"
+	"github.com/Mist-wu/sub2api/internal/pkg/response"
+	middleware2 "github.com/Mist-wu/sub2api/internal/server/middleware"
+	"github.com/Mist-wu/sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

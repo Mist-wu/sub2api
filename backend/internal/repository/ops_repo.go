@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Mist-wu/sub2api/internal/service"
 	"github.com/lib/pq"
 )
 

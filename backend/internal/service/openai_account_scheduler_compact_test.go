@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Mist-wu/sub2api/internal/config"
 	"github.com/stretchr/testify/require"
 )
 

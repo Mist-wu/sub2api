@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/domain"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/Mist-wu/sub2api/internal/domain"
+	infraerrors "github.com/Mist-wu/sub2api/internal/pkg/errors"
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
 )

@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/accountgroup"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	dbent "github.com/Mist-wu/sub2api/ent"
+	"github.com/Mist-wu/sub2api/ent/accountgroup"
+	"github.com/Mist-wu/sub2api/internal/pkg/pagination"
+	"github.com/Mist-wu/sub2api/internal/service"
 	"github.com/stretchr/testify/suite"
 )
 

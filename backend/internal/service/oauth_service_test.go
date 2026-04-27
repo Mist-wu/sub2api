@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/oauth"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
+	"github.com/Mist-wu/sub2api/internal/pkg/oauth"
+	"github.com/Mist-wu/sub2api/internal/pkg/pagination"
 )
 
 // --- mock: ClaudeOAuthClient ---

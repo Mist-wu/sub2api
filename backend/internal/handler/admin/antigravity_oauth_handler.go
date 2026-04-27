@@ -1,8 +1,8 @@
 package admin
 
 import (
-	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Mist-wu/sub2api/internal/pkg/response"
+	"github.com/Mist-wu/sub2api/internal/service"
 	"github.com/gin-gonic/gin"
 )
 

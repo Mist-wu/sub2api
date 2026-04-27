@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/authidentity"
-	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	dbent "github.com/Mist-wu/sub2api/ent"
+	"github.com/Mist-wu/sub2api/ent/authidentity"
+	"github.com/Mist-wu/sub2api/ent/authidentitychannel"
+	"github.com/Mist-wu/sub2api/internal/service"
 	"github.com/stretchr/testify/suite"
 )
 

@@ -7,11 +7,11 @@ import (
 	"database/sql"
 	"testing"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/authidentity"
-	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
-	"github.com/Wei-Shaw/sub2api/ent/enttest"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	dbent "github.com/Mist-wu/sub2api/ent"
+	"github.com/Mist-wu/sub2api/ent/authidentity"
+	"github.com/Mist-wu/sub2api/ent/authidentitychannel"
+	"github.com/Mist-wu/sub2api/ent/enttest"
+	infraerrors "github.com/Mist-wu/sub2api/internal/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"entgo.io/ent/dialect"

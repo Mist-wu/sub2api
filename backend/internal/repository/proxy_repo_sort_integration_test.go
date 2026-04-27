@@ -3,8 +3,8 @@
 package repository
 
 import (
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Mist-wu/sub2api/internal/pkg/pagination"
+	"github.com/Mist-wu/sub2api/internal/service"
 )
 
 func (s *ProxyRepoSuite) TestListWithFiltersAndAccountCount_SortByAccountCountDesc() {
