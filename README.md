@@ -541,33 +541,36 @@ Simple Mode is designed for individual developers or internal teams who want qui
 
 ## Antigravity Support
 
-Sub2API supports [Antigravity](https://antigravity.so/) accounts. After authorization, dedicated endpoints are available for Claude and Gemini models.
+Sub2API supports [Antigravity](https://antigravity.so/) accounts. The production catalog is intentionally conservative and only exposes Gemini preview request names.
+
+### Production Model Catalog
+
+OpenAI request models:
+
+- `gpt-5.3-codex`
+- `gpt-5.3-codex-spark`
+- `gpt-5.4`
+- `gpt-5.4-mini`
+- `gpt-5.5`
+- `gpt-image-2`
+
+Gemini request models:
+
+- `gemini-3-flash-preview`
+- `gemini-3-pro-preview`
+- `gemini-3.1-pro-preview`
+
+For production accounts, keep `model_mapping` explicit. An empty mapping means all default models are allowed.
 
 ### Dedicated Endpoints
 
 | Endpoint | Model |
 |----------|-------|
-| `/antigravity/v1/messages` | Claude models |
 | `/antigravity/v1beta/` | Gemini models |
-
-### Claude Code Configuration
-
-```bash
-export ANTHROPIC_BASE_URL="http://localhost:8080/antigravity"
-export ANTHROPIC_AUTH_TOKEN="sk-xxx"
-```
 
 ### Hybrid Scheduling Mode
 
-Antigravity accounts support optional **hybrid scheduling**. When enabled, the general endpoints `/v1/messages` and `/v1beta/` will also route requests to Antigravity accounts.
-
-> **⚠️ Warning**: Anthropic Claude and Antigravity Claude **cannot be mixed within the same conversation context**. Use groups to isolate them properly.
-
-### Known Issues
-
-In Claude Code, Plan Mode cannot exit automatically. (Normally when using the native Claude API, after planning is complete, Claude Code will pop up options for users to approve or reject the plan.)
-
-**Workaround**: Press `Shift + Tab` to manually exit Plan Mode, then type your response to approve or reject the plan.
+Antigravity accounts support optional **hybrid scheduling**. When enabled, the general endpoint `/v1beta/` will also route Gemini requests to Antigravity accounts.
 
 ---
 

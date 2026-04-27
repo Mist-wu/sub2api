@@ -139,3 +139,29 @@ func TestMigration135AddsCodexSparkToOpenAIOAuthModelMappings(t *testing.T) {
 	require.Contains(t, sql, "jsonb_typeof(credentials->'model_mapping') = 'object'")
 	require.Contains(t, sql, "NOT (credentials->'model_mapping' ? 'gpt-5.3-codex-spark')")
 }
+
+func TestMigration136RestrictsProductionModelMappings(t *testing.T) {
+	content, err := FS.ReadFile("136_restrict_production_model_mappings.sql")
+	require.NoError(t, err)
+
+	sql := string(content)
+	for _, model := range []string{
+		"gpt-5.3-codex",
+		"gpt-5.3-codex-spark",
+		"gpt-5.4",
+		"gpt-5.4-mini",
+		"gpt-5.5",
+		"gpt-image-2",
+		"gemini-3-flash-preview",
+		"gemini-3-pro-preview",
+		"gemini-3.1-pro-preview",
+	} {
+		require.Contains(t, sql, model)
+	}
+	require.Contains(t, sql, "platform = 'openai'")
+	require.Contains(t, sql, "platform = 'gemini'")
+	require.Contains(t, sql, "platform = 'antigravity'")
+	require.NotContains(t, sql, "gpt-5.2")
+	require.NotContains(t, sql, "gpt-image-1")
+	require.NotContains(t, sql, "gemini-2.5")
+}

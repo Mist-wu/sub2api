@@ -135,7 +135,8 @@ func TestAccountHandlerGetAvailableModels_OpenAIDefaultsIncludeCodexAuthModels(t
 	for _, model := range resp.Data {
 		ids[model.ID] = true
 	}
-	require.True(t, ids["gpt-5.5"])
-	require.True(t, ids["gpt-5.3-codex-spark"])
-	require.True(t, ids["gpt-image-2"])
+	for _, id := range []string{"gpt-5.3-codex", "gpt-5.3-codex-spark", "gpt-5.4", "gpt-5.4-mini", "gpt-5.5", "gpt-image-2"} {
+		require.True(t, ids[id], "expected %s in OpenAI defaults", id)
+	}
+	require.Len(t, ids, 6)
 }
