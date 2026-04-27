@@ -127,3 +127,15 @@ func TestMigration124BackfillsLegacyOIDCSecurityFlagsSafely(t *testing.T) {
 	require.Contains(t, sql, "oidc_connect_enabled")
 	require.Contains(t, sql, "'false'")
 }
+
+func TestMigration135AddsCodexSparkToOpenAIOAuthModelMappings(t *testing.T) {
+	content, err := FS.ReadFile("135_add_gpt53_codex_spark_to_openai_oauth_mapping.sql")
+	require.NoError(t, err)
+
+	sql := string(content)
+	require.Contains(t, sql, `"gpt-5.3-codex-spark": "gpt-5.3-codex-spark"`)
+	require.Contains(t, sql, "platform = 'openai'")
+	require.Contains(t, sql, "type IN ('oauth', 'setup-token')")
+	require.Contains(t, sql, "jsonb_typeof(credentials->'model_mapping') = 'object'")
+	require.Contains(t, sql, "NOT (credentials->'model_mapping' ? 'gpt-5.3-codex-spark')")
+}

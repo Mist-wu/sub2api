@@ -8,7 +8,7 @@ func TestDefaultModels_ContainsCodexAuthModels(t *testing.T) {
 		ids[model.ID] = true
 	}
 
-	for _, id := range []string{"gpt-5.5", "gpt-image-2"} {
+	for _, id := range []string{"gpt-5.5", "gpt-5.3-codex-spark", "gpt-image-2"} {
 		if !ids[id] {
 			t.Fatalf("expected %q in OpenAI default model list", id)
 		}

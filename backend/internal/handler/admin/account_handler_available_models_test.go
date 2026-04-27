@@ -104,7 +104,7 @@ func TestAccountHandlerGetAvailableModels_OpenAIOAuthPassthroughFallsBackToDefau
 	require.NotEqual(t, "gpt-5", resp.Data[0].ID)
 }
 
-func TestAccountHandlerGetAvailableModels_OpenAIDefaultsIncludeGPT55AndImage2(t *testing.T) {
+func TestAccountHandlerGetAvailableModels_OpenAIDefaultsIncludeCodexAuthModels(t *testing.T) {
 	svc := &availableModelsAdminService{
 		stubAdminService: newStubAdminService(),
 		account: service.Account{
@@ -136,5 +136,6 @@ func TestAccountHandlerGetAvailableModels_OpenAIDefaultsIncludeGPT55AndImage2(t 
 		ids[model.ID] = true
 	}
 	require.True(t, ids["gpt-5.5"])
+	require.True(t, ids["gpt-5.3-codex-spark"])
 	require.True(t, ids["gpt-image-2"])
 }
