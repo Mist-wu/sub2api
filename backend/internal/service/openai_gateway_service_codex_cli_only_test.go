@@ -231,6 +231,20 @@ func TestIsOpenAITransientProcessingError(t *testing.T) {
 	))
 }
 
+func TestIsOpenAIModelUnsupportedForAccount(t *testing.T) {
+	require.True(t, isOpenAIModelUnsupportedForAccount(
+		http.StatusBadRequest,
+		"",
+		[]byte(`{"detail":"The 'gpt-5.5' model is not supported when using Codex with a ChatGPT account."}`),
+	))
+
+	require.False(t, isOpenAIModelUnsupportedForAccount(
+		http.StatusBadRequest,
+		"Missing required parameter: 'instructions'",
+		[]byte(`{"error":{"message":"Missing required parameter: 'instructions'"}}`),
+	))
+}
+
 func TestOpenAIGatewayService_Forward_LogsInstructionsRequiredDetails(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logSink, restore := captureStructuredLog(t)
