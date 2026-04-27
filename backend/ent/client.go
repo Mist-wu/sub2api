@@ -48,6 +48,7 @@ import (
 	"github.com/Mist-wu/sub2api/ent/userallowedgroup"
 	"github.com/Mist-wu/sub2api/ent/userattributedefinition"
 	"github.com/Mist-wu/sub2api/ent/userattributevalue"
+	"github.com/Mist-wu/sub2api/ent/userimagegeneration"
 	"github.com/Mist-wu/sub2api/ent/usersubscription"
 
 	stdsql "database/sql"
@@ -124,6 +125,8 @@ type Client struct {
 	UserAttributeDefinition *UserAttributeDefinitionClient
 	// UserAttributeValue is the client for interacting with the UserAttributeValue builders.
 	UserAttributeValue *UserAttributeValueClient
+	// UserImageGeneration is the client for interacting with the UserImageGeneration builders.
+	UserImageGeneration *UserImageGenerationClient
 	// UserSubscription is the client for interacting with the UserSubscription builders.
 	UserSubscription *UserSubscriptionClient
 }
@@ -170,6 +173,7 @@ func (c *Client) init() {
 	c.UserAllowedGroup = NewUserAllowedGroupClient(c.config)
 	c.UserAttributeDefinition = NewUserAttributeDefinitionClient(c.config)
 	c.UserAttributeValue = NewUserAttributeValueClient(c.config)
+	c.UserImageGeneration = NewUserImageGenerationClient(c.config)
 	c.UserSubscription = NewUserSubscriptionClient(c.config)
 }
 
@@ -296,6 +300,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		UserAllowedGroup:              NewUserAllowedGroupClient(cfg),
 		UserAttributeDefinition:       NewUserAttributeDefinitionClient(cfg),
 		UserAttributeValue:            NewUserAttributeValueClient(cfg),
+		UserImageGeneration:           NewUserImageGenerationClient(cfg),
 		UserSubscription:              NewUserSubscriptionClient(cfg),
 	}, nil
 }
@@ -349,6 +354,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		UserAllowedGroup:              NewUserAllowedGroupClient(cfg),
 		UserAttributeDefinition:       NewUserAttributeDefinitionClient(cfg),
 		UserAttributeValue:            NewUserAttributeValueClient(cfg),
+		UserImageGeneration:           NewUserImageGenerationClient(cfg),
 		UserSubscription:              NewUserSubscriptionClient(cfg),
 	}, nil
 }
@@ -388,7 +394,7 @@ func (c *Client) Use(hooks ...Hook) {
 		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
 		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
 		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
-		c.UserSubscription,
+		c.UserImageGeneration, c.UserSubscription,
 	} {
 		n.Use(hooks...)
 	}
@@ -407,7 +413,7 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
 		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
 		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
-		c.UserSubscription,
+		c.UserImageGeneration, c.UserSubscription,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -482,6 +488,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.UserAttributeDefinition.mutate(ctx, m)
 	case *UserAttributeValueMutation:
 		return c.UserAttributeValue.mutate(ctx, m)
+	case *UserImageGenerationMutation:
+		return c.UserImageGeneration.mutate(ctx, m)
 	case *UserSubscriptionMutation:
 		return c.UserSubscription.mutate(ctx, m)
 	default:
@@ -5261,6 +5269,22 @@ func (c *UserClient) QueryUsageLogs(_m *User) *UsageLogQuery {
 	return query
 }
 
+// QueryImageGenerations queries the image_generations edge of a User.
+func (c *UserClient) QueryImageGenerations(_m *User) *UserImageGenerationQuery {
+	query := (&UserImageGenerationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(userimagegeneration.Table, userimagegeneration.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ImageGenerationsTable, user.ImageGenerationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryAttributeValues queries the attribute_values edge of a User.
 func (c *UserClient) QueryAttributeValues(_m *User) *UserAttributeValueQuery {
 	query := (&UserAttributeValueClient{config: c.config}).Query()
@@ -5816,6 +5840,155 @@ func (c *UserAttributeValueClient) mutate(ctx context.Context, m *UserAttributeV
 	}
 }
 
+// UserImageGenerationClient is a client for the UserImageGeneration schema.
+type UserImageGenerationClient struct {
+	config
+}
+
+// NewUserImageGenerationClient returns a client for the UserImageGeneration from the given config.
+func NewUserImageGenerationClient(c config) *UserImageGenerationClient {
+	return &UserImageGenerationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `userimagegeneration.Hooks(f(g(h())))`.
+func (c *UserImageGenerationClient) Use(hooks ...Hook) {
+	c.hooks.UserImageGeneration = append(c.hooks.UserImageGeneration, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `userimagegeneration.Intercept(f(g(h())))`.
+func (c *UserImageGenerationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.UserImageGeneration = append(c.inters.UserImageGeneration, interceptors...)
+}
+
+// Create returns a builder for creating a UserImageGeneration entity.
+func (c *UserImageGenerationClient) Create() *UserImageGenerationCreate {
+	mutation := newUserImageGenerationMutation(c.config, OpCreate)
+	return &UserImageGenerationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of UserImageGeneration entities.
+func (c *UserImageGenerationClient) CreateBulk(builders ...*UserImageGenerationCreate) *UserImageGenerationCreateBulk {
+	return &UserImageGenerationCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *UserImageGenerationClient) MapCreateBulk(slice any, setFunc func(*UserImageGenerationCreate, int)) *UserImageGenerationCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &UserImageGenerationCreateBulk{err: fmt.Errorf("calling to UserImageGenerationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*UserImageGenerationCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &UserImageGenerationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for UserImageGeneration.
+func (c *UserImageGenerationClient) Update() *UserImageGenerationUpdate {
+	mutation := newUserImageGenerationMutation(c.config, OpUpdate)
+	return &UserImageGenerationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *UserImageGenerationClient) UpdateOne(_m *UserImageGeneration) *UserImageGenerationUpdateOne {
+	mutation := newUserImageGenerationMutation(c.config, OpUpdateOne, withUserImageGeneration(_m))
+	return &UserImageGenerationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *UserImageGenerationClient) UpdateOneID(id int64) *UserImageGenerationUpdateOne {
+	mutation := newUserImageGenerationMutation(c.config, OpUpdateOne, withUserImageGenerationID(id))
+	return &UserImageGenerationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for UserImageGeneration.
+func (c *UserImageGenerationClient) Delete() *UserImageGenerationDelete {
+	mutation := newUserImageGenerationMutation(c.config, OpDelete)
+	return &UserImageGenerationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *UserImageGenerationClient) DeleteOne(_m *UserImageGeneration) *UserImageGenerationDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *UserImageGenerationClient) DeleteOneID(id int64) *UserImageGenerationDeleteOne {
+	builder := c.Delete().Where(userimagegeneration.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &UserImageGenerationDeleteOne{builder}
+}
+
+// Query returns a query builder for UserImageGeneration.
+func (c *UserImageGenerationClient) Query() *UserImageGenerationQuery {
+	return &UserImageGenerationQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeUserImageGeneration},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a UserImageGeneration entity by its id.
+func (c *UserImageGenerationClient) Get(ctx context.Context, id int64) (*UserImageGeneration, error) {
+	return c.Query().Where(userimagegeneration.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *UserImageGenerationClient) GetX(ctx context.Context, id int64) *UserImageGeneration {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a UserImageGeneration.
+func (c *UserImageGenerationClient) QueryUser(_m *UserImageGeneration) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(userimagegeneration.Table, userimagegeneration.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, userimagegeneration.UserTable, userimagegeneration.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *UserImageGenerationClient) Hooks() []Hook {
+	return c.hooks.UserImageGeneration
+}
+
+// Interceptors returns the client interceptors.
+func (c *UserImageGenerationClient) Interceptors() []Interceptor {
+	return c.inters.UserImageGeneration
+}
+
+func (c *UserImageGenerationClient) mutate(ctx context.Context, m *UserImageGenerationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&UserImageGenerationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&UserImageGenerationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&UserImageGenerationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&UserImageGenerationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown UserImageGeneration mutation op: %q", m.Op())
+	}
+}
+
 // UserSubscriptionClient is a client for the UserSubscription schema.
 type UserSubscriptionClient struct {
 	config
@@ -6025,7 +6198,8 @@ type (
 		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
 		PromoCodeUsage, Proxy, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
 		TLSFingerprintProfile, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserSubscription []ent.Hook
+		UserAttributeDefinition, UserAttributeValue, UserImageGeneration,
+		UserSubscription []ent.Hook
 	}
 	inters struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
@@ -6035,7 +6209,8 @@ type (
 		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
 		PromoCodeUsage, Proxy, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
 		TLSFingerprintProfile, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserSubscription []ent.Interceptor
+		UserAttributeDefinition, UserAttributeValue, UserImageGeneration,
+		UserSubscription []ent.Interceptor
 	}
 )
 

@@ -42,6 +42,7 @@ import (
 	"github.com/Mist-wu/sub2api/ent/userallowedgroup"
 	"github.com/Mist-wu/sub2api/ent/userattributedefinition"
 	"github.com/Mist-wu/sub2api/ent/userattributevalue"
+	"github.com/Mist-wu/sub2api/ent/userimagegeneration"
 	"github.com/Mist-wu/sub2api/ent/usersubscription"
 )
 
@@ -992,6 +993,33 @@ func (f TraverseUserAttributeValue) Traverse(ctx context.Context, q ent.Query) e
 	return fmt.Errorf("unexpected query type %T. expect *ent.UserAttributeValueQuery", q)
 }
 
+// The UserImageGenerationFunc type is an adapter to allow the use of ordinary function as a Querier.
+type UserImageGenerationFunc func(context.Context, *ent.UserImageGenerationQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f UserImageGenerationFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.UserImageGenerationQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.UserImageGenerationQuery", q)
+}
+
+// The TraverseUserImageGeneration type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseUserImageGeneration func(context.Context, *ent.UserImageGenerationQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseUserImageGeneration) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseUserImageGeneration) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.UserImageGenerationQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.UserImageGenerationQuery", q)
+}
+
 // The UserSubscriptionFunc type is an adapter to allow the use of ordinary function as a Querier.
 type UserSubscriptionFunc func(context.Context, *ent.UserSubscriptionQuery) (ent.Value, error)
 
@@ -1088,6 +1116,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.UserAttributeDefinitionQuery, predicate.UserAttributeDefinition, userattributedefinition.OrderOption]{typ: ent.TypeUserAttributeDefinition, tq: q}, nil
 	case *ent.UserAttributeValueQuery:
 		return &query[*ent.UserAttributeValueQuery, predicate.UserAttributeValue, userattributevalue.OrderOption]{typ: ent.TypeUserAttributeValue, tq: q}, nil
+	case *ent.UserImageGenerationQuery:
+		return &query[*ent.UserImageGenerationQuery, predicate.UserImageGeneration, userimagegeneration.OrderOption]{typ: ent.TypeUserImageGeneration, tq: q}, nil
 	case *ent.UserSubscriptionQuery:
 		return &query[*ent.UserSubscriptionQuery, predicate.UserSubscription, usersubscription.OrderOption]{typ: ent.TypeUserSubscription, tq: q}, nil
 	default:

@@ -30,3 +30,11 @@ describe('AppSidebar header styles', () => {
     expect(sidebarBrandBlockMatch?.[0]).not.toContain('overflow: hidden;')
   })
 })
+
+describe('AppSidebar image navigation', () => {
+  it('keeps the Image entry in the shared user navigation', () => {
+    expect(componentSource).toContain("path: '/image'")
+    expect(componentSource).toContain("label: t('nav.image')")
+    expect(componentSource).toContain('icon: SparklesIcon')
+  })
+})

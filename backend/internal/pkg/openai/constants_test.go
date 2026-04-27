@@ -27,3 +27,9 @@ func TestDefaultModels_OnlyExposeProductionAllowlist(t *testing.T) {
 		}
 	}
 }
+
+func TestDefaultTestModel(t *testing.T) {
+	if DefaultTestModel != "gpt-5.5" {
+		t.Fatalf("unexpected default test model: got %q want %q", DefaultTestModel, "gpt-5.5")
+	}
+}

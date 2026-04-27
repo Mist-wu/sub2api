@@ -46,6 +46,7 @@ import (
 	"github.com/Mist-wu/sub2api/ent/userallowedgroup"
 	"github.com/Mist-wu/sub2api/ent/userattributedefinition"
 	"github.com/Mist-wu/sub2api/ent/userattributevalue"
+	"github.com/Mist-wu/sub2api/ent/userimagegeneration"
 	"github.com/Mist-wu/sub2api/ent/usersubscription"
 	"github.com/Mist-wu/sub2api/internal/domain"
 )
@@ -92,6 +93,7 @@ const (
 	TypeUserAllowedGroup              = "UserAllowedGroup"
 	TypeUserAttributeDefinition       = "UserAttributeDefinition"
 	TypeUserAttributeValue            = "UserAttributeValue"
+	TypeUserImageGeneration           = "UserImageGeneration"
 	TypeUserSubscription              = "UserSubscription"
 )
 
@@ -37477,6 +37479,9 @@ type UserMutation struct {
 	usage_logs                    map[int64]struct{}
 	removedusage_logs             map[int64]struct{}
 	clearedusage_logs             bool
+	image_generations             map[int64]struct{}
+	removedimage_generations      map[int64]struct{}
+	clearedimage_generations      bool
 	attribute_values              map[int64]struct{}
 	removedattribute_values       map[int64]struct{}
 	clearedattribute_values       bool
@@ -38980,6 +38985,60 @@ func (m *UserMutation) ResetUsageLogs() {
 	m.removedusage_logs = nil
 }
 
+// AddImageGenerationIDs adds the "image_generations" edge to the UserImageGeneration entity by ids.
+func (m *UserMutation) AddImageGenerationIDs(ids ...int64) {
+	if m.image_generations == nil {
+		m.image_generations = make(map[int64]struct{})
+	}
+	for i := range ids {
+		m.image_generations[ids[i]] = struct{}{}
+	}
+}
+
+// ClearImageGenerations clears the "image_generations" edge to the UserImageGeneration entity.
+func (m *UserMutation) ClearImageGenerations() {
+	m.clearedimage_generations = true
+}
+
+// ImageGenerationsCleared reports if the "image_generations" edge to the UserImageGeneration entity was cleared.
+func (m *UserMutation) ImageGenerationsCleared() bool {
+	return m.clearedimage_generations
+}
+
+// RemoveImageGenerationIDs removes the "image_generations" edge to the UserImageGeneration entity by IDs.
+func (m *UserMutation) RemoveImageGenerationIDs(ids ...int64) {
+	if m.removedimage_generations == nil {
+		m.removedimage_generations = make(map[int64]struct{})
+	}
+	for i := range ids {
+		delete(m.image_generations, ids[i])
+		m.removedimage_generations[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedImageGenerations returns the removed IDs of the "image_generations" edge to the UserImageGeneration entity.
+func (m *UserMutation) RemovedImageGenerationsIDs() (ids []int64) {
+	for id := range m.removedimage_generations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ImageGenerationsIDs returns the "image_generations" edge IDs in the mutation.
+func (m *UserMutation) ImageGenerationsIDs() (ids []int64) {
+	for id := range m.image_generations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetImageGenerations resets all changes to the "image_generations" edge.
+func (m *UserMutation) ResetImageGenerations() {
+	m.image_generations = nil
+	m.clearedimage_generations = false
+	m.removedimage_generations = nil
+}
+
 // AddAttributeValueIDs adds the "attribute_values" edge to the UserAttributeValue entity by ids.
 func (m *UserMutation) AddAttributeValueIDs(ids ...int64) {
 	if m.attribute_values == nil {
@@ -39859,7 +39918,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 13)
 	if m.api_keys != nil {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
@@ -39880,6 +39939,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.usage_logs != nil {
 		edges = append(edges, user.EdgeUsageLogs)
+	}
+	if m.image_generations != nil {
+		edges = append(edges, user.EdgeImageGenerations)
 	}
 	if m.attribute_values != nil {
 		edges = append(edges, user.EdgeAttributeValues)
@@ -39945,6 +40007,12 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeImageGenerations:
+		ids := make([]ent.Value, 0, len(m.image_generations))
+		for id := range m.image_generations {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgeAttributeValues:
 		ids := make([]ent.Value, 0, len(m.attribute_values))
 		for id := range m.attribute_values {
@@ -39981,7 +40049,7 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 13)
 	if m.removedapi_keys != nil {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
@@ -40002,6 +40070,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedusage_logs != nil {
 		edges = append(edges, user.EdgeUsageLogs)
+	}
+	if m.removedimage_generations != nil {
+		edges = append(edges, user.EdgeImageGenerations)
 	}
 	if m.removedattribute_values != nil {
 		edges = append(edges, user.EdgeAttributeValues)
@@ -40067,6 +40138,12 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeImageGenerations:
+		ids := make([]ent.Value, 0, len(m.removedimage_generations))
+		for id := range m.removedimage_generations {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgeAttributeValues:
 		ids := make([]ent.Value, 0, len(m.removedattribute_values))
 		for id := range m.removedattribute_values {
@@ -40103,7 +40180,7 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 13)
 	if m.clearedapi_keys {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
@@ -40124,6 +40201,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearedusage_logs {
 		edges = append(edges, user.EdgeUsageLogs)
+	}
+	if m.clearedimage_generations {
+		edges = append(edges, user.EdgeImageGenerations)
 	}
 	if m.clearedattribute_values {
 		edges = append(edges, user.EdgeAttributeValues)
@@ -40161,6 +40241,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedallowed_groups
 	case user.EdgeUsageLogs:
 		return m.clearedusage_logs
+	case user.EdgeImageGenerations:
+		return m.clearedimage_generations
 	case user.EdgeAttributeValues:
 		return m.clearedattribute_values
 	case user.EdgePromoCodeUsages:
@@ -40207,6 +40289,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeUsageLogs:
 		m.ResetUsageLogs()
+		return nil
+	case user.EdgeImageGenerations:
+		m.ResetImageGenerations()
 		return nil
 	case user.EdgeAttributeValues:
 		m.ResetAttributeValues()
@@ -42441,6 +42526,789 @@ func (m *UserAttributeValueMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown UserAttributeValue edge %s", name)
+}
+
+// UserImageGenerationMutation represents an operation that mutates the UserImageGeneration nodes in the graph.
+type UserImageGenerationMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *int64
+	prompt         *string
+	revised_prompt *string
+	model          *string
+	mime_type      *string
+	image_data     *[]byte
+	image_sha256   *string
+	created_at     *time.Time
+	clearedFields  map[string]struct{}
+	user           *int64
+	cleareduser    bool
+	done           bool
+	oldValue       func(context.Context) (*UserImageGeneration, error)
+	predicates     []predicate.UserImageGeneration
+}
+
+var _ ent.Mutation = (*UserImageGenerationMutation)(nil)
+
+// userimagegenerationOption allows management of the mutation configuration using functional options.
+type userimagegenerationOption func(*UserImageGenerationMutation)
+
+// newUserImageGenerationMutation creates new mutation for the UserImageGeneration entity.
+func newUserImageGenerationMutation(c config, op Op, opts ...userimagegenerationOption) *UserImageGenerationMutation {
+	m := &UserImageGenerationMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeUserImageGeneration,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withUserImageGenerationID sets the ID field of the mutation.
+func withUserImageGenerationID(id int64) userimagegenerationOption {
+	return func(m *UserImageGenerationMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *UserImageGeneration
+		)
+		m.oldValue = func(ctx context.Context) (*UserImageGeneration, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().UserImageGeneration.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withUserImageGeneration sets the old UserImageGeneration of the mutation.
+func withUserImageGeneration(node *UserImageGeneration) userimagegenerationOption {
+	return func(m *UserImageGenerationMutation) {
+		m.oldValue = func(context.Context) (*UserImageGeneration, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m UserImageGenerationMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m UserImageGenerationMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *UserImageGenerationMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *UserImageGenerationMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().UserImageGeneration.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetUserID sets the "user_id" field.
+func (m *UserImageGenerationMutation) SetUserID(i int64) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *UserImageGenerationMutation) UserID() (r int64, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the UserImageGeneration entity.
+// If the UserImageGeneration object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserImageGenerationMutation) OldUserID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *UserImageGenerationMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetPrompt sets the "prompt" field.
+func (m *UserImageGenerationMutation) SetPrompt(s string) {
+	m.prompt = &s
+}
+
+// Prompt returns the value of the "prompt" field in the mutation.
+func (m *UserImageGenerationMutation) Prompt() (r string, exists bool) {
+	v := m.prompt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPrompt returns the old "prompt" field's value of the UserImageGeneration entity.
+// If the UserImageGeneration object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserImageGenerationMutation) OldPrompt(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPrompt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPrompt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPrompt: %w", err)
+	}
+	return oldValue.Prompt, nil
+}
+
+// ResetPrompt resets all changes to the "prompt" field.
+func (m *UserImageGenerationMutation) ResetPrompt() {
+	m.prompt = nil
+}
+
+// SetRevisedPrompt sets the "revised_prompt" field.
+func (m *UserImageGenerationMutation) SetRevisedPrompt(s string) {
+	m.revised_prompt = &s
+}
+
+// RevisedPrompt returns the value of the "revised_prompt" field in the mutation.
+func (m *UserImageGenerationMutation) RevisedPrompt() (r string, exists bool) {
+	v := m.revised_prompt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRevisedPrompt returns the old "revised_prompt" field's value of the UserImageGeneration entity.
+// If the UserImageGeneration object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserImageGenerationMutation) OldRevisedPrompt(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRevisedPrompt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRevisedPrompt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRevisedPrompt: %w", err)
+	}
+	return oldValue.RevisedPrompt, nil
+}
+
+// ClearRevisedPrompt clears the value of the "revised_prompt" field.
+func (m *UserImageGenerationMutation) ClearRevisedPrompt() {
+	m.revised_prompt = nil
+	m.clearedFields[userimagegeneration.FieldRevisedPrompt] = struct{}{}
+}
+
+// RevisedPromptCleared returns if the "revised_prompt" field was cleared in this mutation.
+func (m *UserImageGenerationMutation) RevisedPromptCleared() bool {
+	_, ok := m.clearedFields[userimagegeneration.FieldRevisedPrompt]
+	return ok
+}
+
+// ResetRevisedPrompt resets all changes to the "revised_prompt" field.
+func (m *UserImageGenerationMutation) ResetRevisedPrompt() {
+	m.revised_prompt = nil
+	delete(m.clearedFields, userimagegeneration.FieldRevisedPrompt)
+}
+
+// SetModel sets the "model" field.
+func (m *UserImageGenerationMutation) SetModel(s string) {
+	m.model = &s
+}
+
+// Model returns the value of the "model" field in the mutation.
+func (m *UserImageGenerationMutation) Model() (r string, exists bool) {
+	v := m.model
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldModel returns the old "model" field's value of the UserImageGeneration entity.
+// If the UserImageGeneration object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserImageGenerationMutation) OldModel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldModel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldModel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldModel: %w", err)
+	}
+	return oldValue.Model, nil
+}
+
+// ResetModel resets all changes to the "model" field.
+func (m *UserImageGenerationMutation) ResetModel() {
+	m.model = nil
+}
+
+// SetMimeType sets the "mime_type" field.
+func (m *UserImageGenerationMutation) SetMimeType(s string) {
+	m.mime_type = &s
+}
+
+// MimeType returns the value of the "mime_type" field in the mutation.
+func (m *UserImageGenerationMutation) MimeType() (r string, exists bool) {
+	v := m.mime_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMimeType returns the old "mime_type" field's value of the UserImageGeneration entity.
+// If the UserImageGeneration object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserImageGenerationMutation) OldMimeType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMimeType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMimeType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMimeType: %w", err)
+	}
+	return oldValue.MimeType, nil
+}
+
+// ResetMimeType resets all changes to the "mime_type" field.
+func (m *UserImageGenerationMutation) ResetMimeType() {
+	m.mime_type = nil
+}
+
+// SetImageData sets the "image_data" field.
+func (m *UserImageGenerationMutation) SetImageData(b []byte) {
+	m.image_data = &b
+}
+
+// ImageData returns the value of the "image_data" field in the mutation.
+func (m *UserImageGenerationMutation) ImageData() (r []byte, exists bool) {
+	v := m.image_data
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldImageData returns the old "image_data" field's value of the UserImageGeneration entity.
+// If the UserImageGeneration object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserImageGenerationMutation) OldImageData(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldImageData is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldImageData requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldImageData: %w", err)
+	}
+	return oldValue.ImageData, nil
+}
+
+// ResetImageData resets all changes to the "image_data" field.
+func (m *UserImageGenerationMutation) ResetImageData() {
+	m.image_data = nil
+}
+
+// SetImageSha256 sets the "image_sha256" field.
+func (m *UserImageGenerationMutation) SetImageSha256(s string) {
+	m.image_sha256 = &s
+}
+
+// ImageSha256 returns the value of the "image_sha256" field in the mutation.
+func (m *UserImageGenerationMutation) ImageSha256() (r string, exists bool) {
+	v := m.image_sha256
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldImageSha256 returns the old "image_sha256" field's value of the UserImageGeneration entity.
+// If the UserImageGeneration object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserImageGenerationMutation) OldImageSha256(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldImageSha256 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldImageSha256 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldImageSha256: %w", err)
+	}
+	return oldValue.ImageSha256, nil
+}
+
+// ResetImageSha256 resets all changes to the "image_sha256" field.
+func (m *UserImageGenerationMutation) ResetImageSha256() {
+	m.image_sha256 = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *UserImageGenerationMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *UserImageGenerationMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the UserImageGeneration entity.
+// If the UserImageGeneration object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserImageGenerationMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *UserImageGenerationMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *UserImageGenerationMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[userimagegeneration.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *UserImageGenerationMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *UserImageGenerationMutation) UserIDs() (ids []int64) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *UserImageGenerationMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the UserImageGenerationMutation builder.
+func (m *UserImageGenerationMutation) Where(ps ...predicate.UserImageGeneration) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the UserImageGenerationMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *UserImageGenerationMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.UserImageGeneration, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *UserImageGenerationMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *UserImageGenerationMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (UserImageGeneration).
+func (m *UserImageGenerationMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *UserImageGenerationMutation) Fields() []string {
+	fields := make([]string, 0, 8)
+	if m.user != nil {
+		fields = append(fields, userimagegeneration.FieldUserID)
+	}
+	if m.prompt != nil {
+		fields = append(fields, userimagegeneration.FieldPrompt)
+	}
+	if m.revised_prompt != nil {
+		fields = append(fields, userimagegeneration.FieldRevisedPrompt)
+	}
+	if m.model != nil {
+		fields = append(fields, userimagegeneration.FieldModel)
+	}
+	if m.mime_type != nil {
+		fields = append(fields, userimagegeneration.FieldMimeType)
+	}
+	if m.image_data != nil {
+		fields = append(fields, userimagegeneration.FieldImageData)
+	}
+	if m.image_sha256 != nil {
+		fields = append(fields, userimagegeneration.FieldImageSha256)
+	}
+	if m.created_at != nil {
+		fields = append(fields, userimagegeneration.FieldCreatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *UserImageGenerationMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case userimagegeneration.FieldUserID:
+		return m.UserID()
+	case userimagegeneration.FieldPrompt:
+		return m.Prompt()
+	case userimagegeneration.FieldRevisedPrompt:
+		return m.RevisedPrompt()
+	case userimagegeneration.FieldModel:
+		return m.Model()
+	case userimagegeneration.FieldMimeType:
+		return m.MimeType()
+	case userimagegeneration.FieldImageData:
+		return m.ImageData()
+	case userimagegeneration.FieldImageSha256:
+		return m.ImageSha256()
+	case userimagegeneration.FieldCreatedAt:
+		return m.CreatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *UserImageGenerationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case userimagegeneration.FieldUserID:
+		return m.OldUserID(ctx)
+	case userimagegeneration.FieldPrompt:
+		return m.OldPrompt(ctx)
+	case userimagegeneration.FieldRevisedPrompt:
+		return m.OldRevisedPrompt(ctx)
+	case userimagegeneration.FieldModel:
+		return m.OldModel(ctx)
+	case userimagegeneration.FieldMimeType:
+		return m.OldMimeType(ctx)
+	case userimagegeneration.FieldImageData:
+		return m.OldImageData(ctx)
+	case userimagegeneration.FieldImageSha256:
+		return m.OldImageSha256(ctx)
+	case userimagegeneration.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown UserImageGeneration field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *UserImageGenerationMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case userimagegeneration.FieldUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case userimagegeneration.FieldPrompt:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPrompt(v)
+		return nil
+	case userimagegeneration.FieldRevisedPrompt:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRevisedPrompt(v)
+		return nil
+	case userimagegeneration.FieldModel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetModel(v)
+		return nil
+	case userimagegeneration.FieldMimeType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMimeType(v)
+		return nil
+	case userimagegeneration.FieldImageData:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetImageData(v)
+		return nil
+	case userimagegeneration.FieldImageSha256:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetImageSha256(v)
+		return nil
+	case userimagegeneration.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown UserImageGeneration field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *UserImageGenerationMutation) AddedFields() []string {
+	var fields []string
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *UserImageGenerationMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *UserImageGenerationMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown UserImageGeneration numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *UserImageGenerationMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(userimagegeneration.FieldRevisedPrompt) {
+		fields = append(fields, userimagegeneration.FieldRevisedPrompt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *UserImageGenerationMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *UserImageGenerationMutation) ClearField(name string) error {
+	switch name {
+	case userimagegeneration.FieldRevisedPrompt:
+		m.ClearRevisedPrompt()
+		return nil
+	}
+	return fmt.Errorf("unknown UserImageGeneration nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *UserImageGenerationMutation) ResetField(name string) error {
+	switch name {
+	case userimagegeneration.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case userimagegeneration.FieldPrompt:
+		m.ResetPrompt()
+		return nil
+	case userimagegeneration.FieldRevisedPrompt:
+		m.ResetRevisedPrompt()
+		return nil
+	case userimagegeneration.FieldModel:
+		m.ResetModel()
+		return nil
+	case userimagegeneration.FieldMimeType:
+		m.ResetMimeType()
+		return nil
+	case userimagegeneration.FieldImageData:
+		m.ResetImageData()
+		return nil
+	case userimagegeneration.FieldImageSha256:
+		m.ResetImageSha256()
+		return nil
+	case userimagegeneration.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown UserImageGeneration field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *UserImageGenerationMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, userimagegeneration.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *UserImageGenerationMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case userimagegeneration.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *UserImageGenerationMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *UserImageGenerationMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *UserImageGenerationMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, userimagegeneration.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *UserImageGenerationMutation) EdgeCleared(name string) bool {
+	switch name {
+	case userimagegeneration.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *UserImageGenerationMutation) ClearEdge(name string) error {
+	switch name {
+	case userimagegeneration.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown UserImageGeneration unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *UserImageGenerationMutation) ResetEdge(name string) error {
+	switch name {
+	case userimagegeneration.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown UserImageGeneration edge %s", name)
 }
 
 // UserSubscriptionMutation represents an operation that mutates the UserSubscription nodes in the graph.

@@ -174,6 +174,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/image',
+    name: 'Image',
+    component: () => import('@/views/user/ImageView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Image',
+      titleKey: 'image.title',
+      descriptionKey: 'image.description'
+    }
+  },
+  {
     path: '/usage',
     name: 'Usage',
     component: () => import('@/views/user/UsageView.vue'),

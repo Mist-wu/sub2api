@@ -1501,6 +1501,29 @@ func HasUsageLogsWith(preds ...predicate.UsageLog) predicate.User {
 	})
 }
 
+// HasImageGenerations applies the HasEdge predicate on the "image_generations" edge.
+func HasImageGenerations() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ImageGenerationsTable, ImageGenerationsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasImageGenerationsWith applies the HasEdge predicate on the "image_generations" edge with a given conditions (other predicates).
+func HasImageGenerationsWith(preds ...predicate.UserImageGeneration) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newImageGenerationsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasAttributeValues applies the HasEdge predicate on the "attribute_values" edge.
 func HasAttributeValues() predicate.User {
 	return predicate.User(func(s *sql.Selector) {

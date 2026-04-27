@@ -1587,6 +1587,54 @@ var (
 			},
 		},
 	}
+	// UserImageGenerationsColumns holds the columns for the "user_image_generations" table.
+	UserImageGenerationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "prompt", Type: field.TypeString, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "revised_prompt", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "model", Type: field.TypeString, Size: 100, Default: "gpt-image-2"},
+		{Name: "mime_type", Type: field.TypeString, Size: 100, Default: "image/png"},
+		{Name: "image_data", Type: field.TypeBytes, SchemaType: map[string]string{"postgres": "bytea"}},
+		{Name: "image_sha256", Type: field.TypeString, Size: 64},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "user_id", Type: field.TypeInt64},
+	}
+	// UserImageGenerationsTable holds the schema information for the "user_image_generations" table.
+	UserImageGenerationsTable = &schema.Table{
+		Name:       "user_image_generations",
+		Columns:    UserImageGenerationsColumns,
+		PrimaryKey: []*schema.Column{UserImageGenerationsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "user_image_generations_users_image_generations",
+				Columns:    []*schema.Column{UserImageGenerationsColumns[8]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "userimagegeneration_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{UserImageGenerationsColumns[8]},
+			},
+			{
+				Name:    "userimagegeneration_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{UserImageGenerationsColumns[7]},
+			},
+			{
+				Name:    "userimagegeneration_user_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{UserImageGenerationsColumns[8], UserImageGenerationsColumns[7]},
+			},
+			{
+				Name:    "userimagegeneration_image_sha256",
+				Unique:  false,
+				Columns: []*schema.Column{UserImageGenerationsColumns[6]},
+			},
+		},
+	}
 	// UserSubscriptionsColumns holds the columns for the "user_subscriptions" table.
 	UserSubscriptionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1711,6 +1759,7 @@ var (
 		UserAllowedGroupsTable,
 		UserAttributeDefinitionsTable,
 		UserAttributeValuesTable,
+		UserImageGenerationsTable,
 		UserSubscriptionsTable,
 	}
 )
@@ -1843,6 +1892,10 @@ func init() {
 	UserAttributeValuesTable.ForeignKeys[1].RefTable = UserAttributeDefinitionsTable
 	UserAttributeValuesTable.Annotation = &entsql.Annotation{
 		Table: "user_attribute_values",
+	}
+	UserImageGenerationsTable.ForeignKeys[0].RefTable = UsersTable
+	UserImageGenerationsTable.Annotation = &entsql.Annotation{
+		Table: "user_image_generations",
 	}
 	UserSubscriptionsTable.ForeignKeys[0].RefTable = GroupsTable
 	UserSubscriptionsTable.ForeignKeys[1].RefTable = UsersTable

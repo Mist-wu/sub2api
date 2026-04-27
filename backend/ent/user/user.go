@@ -75,6 +75,8 @@ const (
 	EdgeAllowedGroups = "allowed_groups"
 	// EdgeUsageLogs holds the string denoting the usage_logs edge name in mutations.
 	EdgeUsageLogs = "usage_logs"
+	// EdgeImageGenerations holds the string denoting the image_generations edge name in mutations.
+	EdgeImageGenerations = "image_generations"
 	// EdgeAttributeValues holds the string denoting the attribute_values edge name in mutations.
 	EdgeAttributeValues = "attribute_values"
 	// EdgePromoCodeUsages holds the string denoting the promo_code_usages edge name in mutations.
@@ -136,6 +138,13 @@ const (
 	UsageLogsInverseTable = "usage_logs"
 	// UsageLogsColumn is the table column denoting the usage_logs relation/edge.
 	UsageLogsColumn = "user_id"
+	// ImageGenerationsTable is the table that holds the image_generations relation/edge.
+	ImageGenerationsTable = "user_image_generations"
+	// ImageGenerationsInverseTable is the table name for the UserImageGeneration entity.
+	// It exists in this package in order to avoid circular dependency with the "userimagegeneration" package.
+	ImageGenerationsInverseTable = "user_image_generations"
+	// ImageGenerationsColumn is the table column denoting the image_generations relation/edge.
+	ImageGenerationsColumn = "user_id"
 	// AttributeValuesTable is the table that holds the attribute_values relation/edge.
 	AttributeValuesTable = "user_attribute_values"
 	// AttributeValuesInverseTable is the table name for the UserAttributeValue entity.
@@ -499,6 +508,20 @@ func ByUsageLogs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByImageGenerationsCount orders the results by image_generations count.
+func ByImageGenerationsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newImageGenerationsStep(), opts...)
+	}
+}
+
+// ByImageGenerations orders the results by image_generations terms.
+func ByImageGenerations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newImageGenerationsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByAttributeValuesCount orders the results by attribute_values count.
 func ByAttributeValuesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -629,6 +652,13 @@ func newUsageLogsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UsageLogsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, UsageLogsTable, UsageLogsColumn),
+	)
+}
+func newImageGenerationsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ImageGenerationsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ImageGenerationsTable, ImageGenerationsColumn),
 	)
 }
 func newAttributeValuesStep() *sqlgraph.Step {

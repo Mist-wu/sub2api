@@ -23,6 +23,7 @@ import (
 	"github.com/Mist-wu/sub2api/ent/usagelog"
 	"github.com/Mist-wu/sub2api/ent/user"
 	"github.com/Mist-wu/sub2api/ent/userattributevalue"
+	"github.com/Mist-wu/sub2api/ent/userimagegeneration"
 	"github.com/Mist-wu/sub2api/ent/usersubscription"
 )
 
@@ -515,6 +516,21 @@ func (_u *UserUpdate) AddUsageLogs(v ...*UsageLog) *UserUpdate {
 	return _u.AddUsageLogIDs(ids...)
 }
 
+// AddImageGenerationIDs adds the "image_generations" edge to the UserImageGeneration entity by IDs.
+func (_u *UserUpdate) AddImageGenerationIDs(ids ...int64) *UserUpdate {
+	_u.mutation.AddImageGenerationIDs(ids...)
+	return _u
+}
+
+// AddImageGenerations adds the "image_generations" edges to the UserImageGeneration entity.
+func (_u *UserUpdate) AddImageGenerations(v ...*UserImageGeneration) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddImageGenerationIDs(ids...)
+}
+
 // AddAttributeValueIDs adds the "attribute_values" edge to the UserAttributeValue entity by IDs.
 func (_u *UserUpdate) AddAttributeValueIDs(ids ...int64) *UserUpdate {
 	_u.mutation.AddAttributeValueIDs(ids...)
@@ -740,6 +756,27 @@ func (_u *UserUpdate) RemoveUsageLogs(v ...*UsageLog) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveUsageLogIDs(ids...)
+}
+
+// ClearImageGenerations clears all "image_generations" edges to the UserImageGeneration entity.
+func (_u *UserUpdate) ClearImageGenerations() *UserUpdate {
+	_u.mutation.ClearImageGenerations()
+	return _u
+}
+
+// RemoveImageGenerationIDs removes the "image_generations" edge to UserImageGeneration entities by IDs.
+func (_u *UserUpdate) RemoveImageGenerationIDs(ids ...int64) *UserUpdate {
+	_u.mutation.RemoveImageGenerationIDs(ids...)
+	return _u
+}
+
+// RemoveImageGenerations removes "image_generations" edges to UserImageGeneration entities.
+func (_u *UserUpdate) RemoveImageGenerations(v ...*UserImageGeneration) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveImageGenerationIDs(ids...)
 }
 
 // ClearAttributeValues clears all "attribute_values" edges to the UserAttributeValue entity.
@@ -1355,6 +1392,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(usagelog.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ImageGenerationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ImageGenerationsTable,
+			Columns: []string{user.ImageGenerationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userimagegeneration.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedImageGenerationsIDs(); len(nodes) > 0 && !_u.mutation.ImageGenerationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ImageGenerationsTable,
+			Columns: []string{user.ImageGenerationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userimagegeneration.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ImageGenerationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ImageGenerationsTable,
+			Columns: []string{user.ImageGenerationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userimagegeneration.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {
@@ -2083,6 +2165,21 @@ func (_u *UserUpdateOne) AddUsageLogs(v ...*UsageLog) *UserUpdateOne {
 	return _u.AddUsageLogIDs(ids...)
 }
 
+// AddImageGenerationIDs adds the "image_generations" edge to the UserImageGeneration entity by IDs.
+func (_u *UserUpdateOne) AddImageGenerationIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.AddImageGenerationIDs(ids...)
+	return _u
+}
+
+// AddImageGenerations adds the "image_generations" edges to the UserImageGeneration entity.
+func (_u *UserUpdateOne) AddImageGenerations(v ...*UserImageGeneration) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddImageGenerationIDs(ids...)
+}
+
 // AddAttributeValueIDs adds the "attribute_values" edge to the UserAttributeValue entity by IDs.
 func (_u *UserUpdateOne) AddAttributeValueIDs(ids ...int64) *UserUpdateOne {
 	_u.mutation.AddAttributeValueIDs(ids...)
@@ -2308,6 +2405,27 @@ func (_u *UserUpdateOne) RemoveUsageLogs(v ...*UsageLog) *UserUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveUsageLogIDs(ids...)
+}
+
+// ClearImageGenerations clears all "image_generations" edges to the UserImageGeneration entity.
+func (_u *UserUpdateOne) ClearImageGenerations() *UserUpdateOne {
+	_u.mutation.ClearImageGenerations()
+	return _u
+}
+
+// RemoveImageGenerationIDs removes the "image_generations" edge to UserImageGeneration entities by IDs.
+func (_u *UserUpdateOne) RemoveImageGenerationIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.RemoveImageGenerationIDs(ids...)
+	return _u
+}
+
+// RemoveImageGenerations removes "image_generations" edges to UserImageGeneration entities.
+func (_u *UserUpdateOne) RemoveImageGenerations(v ...*UserImageGeneration) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveImageGenerationIDs(ids...)
 }
 
 // ClearAttributeValues clears all "attribute_values" edges to the UserAttributeValue entity.
@@ -2953,6 +3071,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(usagelog.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ImageGenerationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ImageGenerationsTable,
+			Columns: []string{user.ImageGenerationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userimagegeneration.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedImageGenerationsIDs(); len(nodes) > 0 && !_u.mutation.ImageGenerationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ImageGenerationsTable,
+			Columns: []string{user.ImageGenerationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userimagegeneration.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ImageGenerationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ImageGenerationsTable,
+			Columns: []string{user.ImageGenerationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userimagegeneration.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

@@ -70,6 +70,14 @@ func RegisterUserRoutes(
 			groups.GET("/rates", h.APIKey.GetUserGroupRates)
 		}
 
+		// 免费绘图（JWT 用户接口，不走用户 API Key）
+		images := authenticated.Group("/user/images")
+		{
+			images.POST("/generations", h.Image.Generate)
+			images.GET("/history", h.Image.ListHistory)
+			images.GET("/history/:id/file", h.Image.GetHistoryFile)
+		}
+
 		// 用户可用渠道（非管理员接口）
 		channels := authenticated.Group("/channels")
 		{

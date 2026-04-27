@@ -32,6 +32,7 @@ const createMockRouter = (): Router => {
     { path: '/admin/redeem', components: { default: mockImportFn } },
     { path: '/dashboard', components: { default: mockImportFn } },
     { path: '/keys', components: { default: mockImportFn } },
+    { path: '/image', components: { default: mockImportFn } },
     { path: '/usage', components: { default: mockImportFn } },
     { path: '/redeem', components: { default: mockImportFn } },
     { path: '/profile', components: { default: mockImportFn } }
@@ -99,7 +100,7 @@ describe('useRoutePrefetch', () => {
       const route = createMockRoute('/dashboard')
       const config = _getPrefetchConfig(route)
 
-      expect(config).toHaveLength(2)
+      expect(config).toHaveLength(3)
     })
 
     it('未定义的路由应该返回空数组', () => {
@@ -195,7 +196,7 @@ describe('useRoutePrefetch', () => {
 
     it('用户预加载映射表应该包含正确的路由', () => {
       expect(_userPrefetchMap).toHaveProperty('/dashboard')
-      expect(_userPrefetchMap['/dashboard']).toHaveLength(2)
+      expect(_userPrefetchMap['/dashboard']).toHaveLength(3)
     })
   })
 

@@ -344,6 +344,7 @@ export default {
     dashboard: '仪表盘',
     announcements: '公告',
     apiKeys: 'API 密钥',
+    image: '绘图',
     usage: '使用记录',
     redeem: '兑换',
     affiliate: '邀请返利',
@@ -778,6 +779,34 @@ export default {
       quota_exhausted: '额度耗尽',
       expired: '已过期'
     }
+  },
+
+  // Image
+  image: {
+    title: '绘图',
+    description: '输入提示词，生成统一视觉风格的图片',
+    promptLabel: '生图要求',
+    promptPlaceholder: '描述你想生成的画面、主体、氛围或风格',
+    promptHint: '无需选择尺寸、比例或质量，系统会自动处理。',
+    promptRequired: '请输入生图要求',
+    generate: '生成图片',
+    generating: '生成中...',
+    loadingTitle: '正在绘图',
+    loadingHint: '通常需要几十秒，请保持页面打开。',
+    elapsed: '已耗时 {seconds}s',
+    currentResult: '当前结果',
+    noResultTitle: '还没有图片',
+    noResultHint: '输入提示词后即可生成第一张图片。',
+    download: '下载',
+    view: '查看',
+    history: '历史生图',
+    historyEmpty: '暂无历史生图',
+    revisedPrompt: '上游优化提示词',
+    generatedAt: '生成时间',
+    loadHistoryFailed: '加载历史失败',
+    loadFileFailed: '加载图片失败',
+    generateSuccess: '图片已生成',
+    generateFailed: '图片生成失败',
   },
 
   // Usage
@@ -2102,7 +2131,7 @@ export default {
         familyMappingTitle: '系列默认映射',
         familyMappingHint: '当请求命中 Opus、Sonnet、Haiku 系列时，会优先使用这里配置的目标模型。',
         opusModel: 'Opus 映射模型',
-        opusModelPlaceholder: '例如: gpt-5.4',
+        opusModelPlaceholder: '例如: gpt-5.5',
         sonnetModel: 'Sonnet 映射模型',
         sonnetModelPlaceholder: '例如: gpt-5.3-codex',
         haikuModel: 'Haiku 映射模型',
@@ -2114,7 +2143,7 @@ export default {
         claudeModel: 'Claude 模型',
         claudeModelPlaceholder: '例如: claude-sonnet-4-5-20250929',
         targetModel: '目标模型',
-        targetModelPlaceholder: '例如: gpt-5.4',
+        targetModelPlaceholder: '例如: gpt-5.5',
         removeExactMapping: '删除精确映射'
       },
       invalidRequestFallback: {

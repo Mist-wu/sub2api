@@ -405,6 +405,18 @@ func (f UserAttributeValueFunc) Mutate(ctx context.Context, m ent.Mutation) (ent
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserAttributeValueMutation", m)
 }
 
+// The UserImageGenerationFunc type is an adapter to allow the use of ordinary
+// function as UserImageGeneration mutator.
+type UserImageGenerationFunc func(context.Context, *ent.UserImageGenerationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f UserImageGenerationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.UserImageGenerationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserImageGenerationMutation", m)
+}
+
 // The UserSubscriptionFunc type is an adapter to allow the use of ordinary
 // function as UserSubscription mutator.
 type UserSubscriptionFunc func(context.Context, *ent.UserSubscriptionMutation) (ent.Value, error)

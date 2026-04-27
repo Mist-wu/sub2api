@@ -17,7 +17,7 @@ vi.mock('@/composables/useClipboard', () => ({
 import UseKeyModal from '../UseKeyModal.vue'
 
 describe('UseKeyModal', () => {
-  it('renders GPT-5.4 responses entry in POST example', async () => {
+  it('renders GPT-5.5 responses entry in POST example', async () => {
     const wrapper = mount(UseKeyModal, {
       props: {
         show: true,
@@ -49,7 +49,7 @@ describe('UseKeyModal', () => {
     expect(codeBlock.exists()).toBe(true)
     expect(wrapper.text()).toContain('POST /v1/responses')
     expect(wrapper.text()).toContain('POST /v1/images/generations (gpt-image-2)')
-    expect(codeBlock.text()).toContain('"model": "gpt-5.4"')
+    expect(codeBlock.text()).toContain('"model": "gpt-5.5"')
     expect(wrapper.text()).not.toContain('opencode.json')
   })
 })

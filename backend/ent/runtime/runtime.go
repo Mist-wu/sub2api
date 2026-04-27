@@ -39,6 +39,7 @@ import (
 	"github.com/Mist-wu/sub2api/ent/userallowedgroup"
 	"github.com/Mist-wu/sub2api/ent/userattributedefinition"
 	"github.com/Mist-wu/sub2api/ent/userattributevalue"
+	"github.com/Mist-wu/sub2api/ent/userimagegeneration"
 	"github.com/Mist-wu/sub2api/ent/usersubscription"
 	"github.com/Mist-wu/sub2api/internal/domain"
 )
@@ -1961,6 +1962,50 @@ func init() {
 	userattributevalueDescValue := userattributevalueFields[2].Descriptor()
 	// userattributevalue.DefaultValue holds the default value on creation for the value field.
 	userattributevalue.DefaultValue = userattributevalueDescValue.Default.(string)
+	userimagegenerationFields := schema.UserImageGeneration{}.Fields()
+	_ = userimagegenerationFields
+	// userimagegenerationDescPrompt is the schema descriptor for prompt field.
+	userimagegenerationDescPrompt := userimagegenerationFields[1].Descriptor()
+	// userimagegeneration.PromptValidator is a validator for the "prompt" field. It is called by the builders before save.
+	userimagegeneration.PromptValidator = userimagegenerationDescPrompt.Validators[0].(func(string) error)
+	// userimagegenerationDescModel is the schema descriptor for model field.
+	userimagegenerationDescModel := userimagegenerationFields[3].Descriptor()
+	// userimagegeneration.DefaultModel holds the default value on creation for the model field.
+	userimagegeneration.DefaultModel = userimagegenerationDescModel.Default.(string)
+	// userimagegeneration.ModelValidator is a validator for the "model" field. It is called by the builders before save.
+	userimagegeneration.ModelValidator = userimagegenerationDescModel.Validators[0].(func(string) error)
+	// userimagegenerationDescMimeType is the schema descriptor for mime_type field.
+	userimagegenerationDescMimeType := userimagegenerationFields[4].Descriptor()
+	// userimagegeneration.DefaultMimeType holds the default value on creation for the mime_type field.
+	userimagegeneration.DefaultMimeType = userimagegenerationDescMimeType.Default.(string)
+	// userimagegeneration.MimeTypeValidator is a validator for the "mime_type" field. It is called by the builders before save.
+	userimagegeneration.MimeTypeValidator = userimagegenerationDescMimeType.Validators[0].(func(string) error)
+	// userimagegenerationDescImageData is the schema descriptor for image_data field.
+	userimagegenerationDescImageData := userimagegenerationFields[5].Descriptor()
+	// userimagegeneration.ImageDataValidator is a validator for the "image_data" field. It is called by the builders before save.
+	userimagegeneration.ImageDataValidator = userimagegenerationDescImageData.Validators[0].(func([]byte) error)
+	// userimagegenerationDescImageSha256 is the schema descriptor for image_sha256 field.
+	userimagegenerationDescImageSha256 := userimagegenerationFields[6].Descriptor()
+	// userimagegeneration.ImageSha256Validator is a validator for the "image_sha256" field. It is called by the builders before save.
+	userimagegeneration.ImageSha256Validator = func() func(string) error {
+		validators := userimagegenerationDescImageSha256.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(image_sha256 string) error {
+			for _, fn := range fns {
+				if err := fn(image_sha256); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// userimagegenerationDescCreatedAt is the schema descriptor for created_at field.
+	userimagegenerationDescCreatedAt := userimagegenerationFields[7].Descriptor()
+	// userimagegeneration.DefaultCreatedAt holds the default value on creation for the created_at field.
+	userimagegeneration.DefaultCreatedAt = userimagegenerationDescCreatedAt.Default.(func() time.Time)
 	usersubscriptionMixin := schema.UserSubscription{}.Mixin()
 	usersubscriptionMixinHooks1 := usersubscriptionMixin[1].Hooks()
 	usersubscription.Hooks[0] = usersubscriptionMixinHooks1[0]

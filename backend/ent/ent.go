@@ -45,6 +45,7 @@ import (
 	"github.com/Mist-wu/sub2api/ent/userallowedgroup"
 	"github.com/Mist-wu/sub2api/ent/userattributedefinition"
 	"github.com/Mist-wu/sub2api/ent/userattributevalue"
+	"github.com/Mist-wu/sub2api/ent/userimagegeneration"
 	"github.com/Mist-wu/sub2api/ent/usersubscription"
 )
 
@@ -139,6 +140,7 @@ func checkColumn(t, c string) error {
 			userallowedgroup.Table:              userallowedgroup.ValidColumn,
 			userattributedefinition.Table:       userattributedefinition.ValidColumn,
 			userattributevalue.Table:            userattributevalue.ValidColumn,
+			userimagegeneration.Table:           userimagegeneration.ValidColumn,
 			usersubscription.Table:              usersubscription.ValidColumn,
 		})
 	})
