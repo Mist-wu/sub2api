@@ -26,31 +26,6 @@ permissions:
   packages: write
 
 jobs:
-  # Update VERSION file with tag version
-  update-version:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Update VERSION file
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION=${{ github.event.inputs.tag }}
-            VERSION=${VERSION#v}
-          else
-            VERSION=${GITHUB_REF#refs/tags/v}
-          fi
-          echo "$VERSION" > backend/cmd/server/VERSION
-          echo "Updated VERSION file to: $VERSION"
-
-      - name: Upload VERSION artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: version-file
-          path: backend/cmd/server/VERSION
-          retention-days: 1
-
   build-frontend:
     runs-on: ubuntu-latest
     steps:
@@ -85,7 +60,7 @@ jobs:
           retention-days: 1
 
   release:
-    needs: [update-version, build-frontend]
+    needs: [build-frontend]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -94,11 +69,16 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.inputs.tag || github.ref }}
 
-      - name: Download VERSION artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: version-file
-          path: backend/cmd/server/
+      - name: Update VERSION file
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION=${{ github.event.inputs.tag }}
+            VERSION=${VERSION#v}
+          else
+            VERSION=${GITHUB_REF#refs/tags/v}
+          fi
+          echo "$VERSION" > backend/cmd/server/VERSION
+          echo "Updated VERSION file to: $VERSION"
 
       - name: Download frontend artifact
         uses: actions/download-artifact@v8
@@ -119,6 +99,7 @@ jobs:
 
       # Docker setup for GoReleaser
       - name: Set up QEMU
+        if: ${{ env.SIMPLE_RELEASE != 'true' }}
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
