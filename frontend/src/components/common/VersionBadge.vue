@@ -12,7 +12,12 @@
         ]"
         :title="hasUpdate ? t('version.updateAvailable') : t('version.upToDate')"
       >
-        <span v-if="currentVersion" class="font-medium">v{{ currentVersion }}</span>
+        <span
+          v-if="currentVersion"
+          class="max-w-44 truncate font-medium"
+          :title="'v' + currentVersion"
+          >v{{ displayCurrentVersion }}</span
+        >
         <span
           v-else
           class="h-3 w-12 animate-pulse rounded bg-gray-200 font-medium dark:bg-dark-600"
@@ -79,11 +84,12 @@
             <template v-else>
               <!-- Version display - centered and prominent -->
               <div class="mb-4 text-center">
-                <div class="inline-flex items-center gap-2">
+                <div class="flex min-w-0 items-center justify-center gap-2">
                   <span
                     v-if="currentVersion"
-                    class="text-2xl font-bold text-gray-900 dark:text-white"
-                    >v{{ currentVersion }}</span
+                    class="max-w-full truncate text-2xl font-bold text-gray-900 dark:text-white"
+                    :title="'v' + currentVersion"
+                    >v{{ displayCurrentVersion }}</span
                   >
                   <span v-else class="text-2xl font-bold text-gray-400 dark:text-dark-500">--</span>
                   <!-- Show check mark when up to date -->
@@ -107,7 +113,7 @@
                 <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">
                   {{
                     hasUpdate
-                      ? t('version.latestVersion') + ': v' + latestVersion
+                      ? t('version.latestVersion') + ': v' + displayLatestVersion
                       : t('version.upToDate')
                   }}
                 </p>
@@ -250,7 +256,7 @@
                       {{ t('version.updateAvailable') }}
                     </p>
                     <p class="text-xs text-amber-600/70 dark:text-amber-400/70">
-                      v{{ latestVersion }}
+                      v{{ displayLatestVersion }}
                     </p>
                   </div>
                   <svg
@@ -307,7 +313,7 @@
                       {{ t('version.updateAvailable') }}
                     </p>
                     <p class="text-xs text-amber-600/70 dark:text-amber-400/70">
-                      v{{ latestVersion }}
+                      v{{ displayLatestVersion }}
                     </p>
                   </div>
                 </div>
@@ -375,7 +381,7 @@
 
     <!-- Non-admin: Simple static version text -->
     <span v-else-if="version" class="text-xs text-gray-500 dark:text-dark-400">
-      v{{ version }}
+      v{{ displayPropVersion }}
     </span>
   </div>
 </template>
@@ -419,6 +425,24 @@ const restartCountdown = ref(0)
 
 // Only show update check for release builds (binary/docker deployment)
 const isReleaseBuild = computed(() => buildType.value === 'release')
+
+function formatVersionForDisplay(version: string): string {
+  const normalized = version.trim()
+  const gitBuild = normalized.match(/^(main|sha)-([0-9a-f]{12})[0-9a-f]*$/i)
+  if (gitBuild) {
+    return `${gitBuild[1]}-${gitBuild[2]}`
+  }
+
+  if (normalized.length <= 24) {
+    return normalized
+  }
+
+  return `${normalized.slice(0, 21)}...`
+}
+
+const displayCurrentVersion = computed(() => formatVersionForDisplay(currentVersion.value))
+const displayLatestVersion = computed(() => formatVersionForDisplay(latestVersion.value || ''))
+const displayPropVersion = computed(() => formatVersionForDisplay(props.version || ''))
 
 function toggleDropdown() {
   dropdownOpen.value = !dropdownOpen.value

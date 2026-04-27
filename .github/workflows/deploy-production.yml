@@ -27,6 +27,7 @@ jobs:
       image: ${{ steps.meta.outputs.image }}
       tag: ${{ steps.meta.outputs.tag }}
       ref: ${{ steps.meta.outputs.ref }}
+      version: ${{ steps.meta.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -39,10 +40,12 @@ jobs:
           short_sha="${GITHUB_SHA::12}"
           image="ghcr.io/${owner}/${IMAGE_NAME}"
           tag="sha-${short_sha}"
+          version="main-${short_sha}"
           {
             echo "image=${image}"
             echo "tag=${tag}"
             echo "ref=${image}:${tag}"
+            echo "version=${version}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
@@ -63,7 +66,7 @@ jobs:
           platforms: linux/amd64
           push: true
           build-args: |
-            VERSION=main-${{ github.sha }}
+            VERSION=${{ steps.meta.outputs.version }}
             COMMIT=${{ github.sha }}
           tags: |
             ${{ steps.meta.outputs.ref }}
