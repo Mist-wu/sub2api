@@ -488,6 +488,7 @@ func TestOpenAIGatewayService_OAuthLegacy_NonCodexClientUsesCodexIdentity(t *tes
 	require.NotNil(t, upstream.lastReq)
 	require.Equal(t, "codex_cli_rs", upstream.lastReq.Header.Get("originator"))
 	require.Equal(t, codexCLIUserAgent, upstream.lastReq.Header.Get("User-Agent"))
+	require.Equal(t, codexCLIVersion, upstream.lastReq.Header.Get("Version"))
 }
 
 func TestOpenAIGatewayService_OAuthPassthrough_ResponseHeadersAllowXCodex(t *testing.T) {
