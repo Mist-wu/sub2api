@@ -14,11 +14,27 @@ func mustRawJSON(t *testing.T, s string) json.RawMessage {
 }
 
 func TestShouldAutoInjectPromptCacheKeyForCompat(t *testing.T) {
+	require.True(t, shouldAutoInjectPromptCacheKeyForCompat("gpt-5.5"))
+	require.True(t, shouldAutoInjectPromptCacheKeyForCompat("gpt-5.5-xhigh"))
 	require.True(t, shouldAutoInjectPromptCacheKeyForCompat("gpt-5.4"))
 	require.True(t, shouldAutoInjectPromptCacheKeyForCompat("gpt-5.3"))
 	require.True(t, shouldAutoInjectPromptCacheKeyForCompat("gpt-5.3-codex"))
 	require.True(t, shouldAutoInjectPromptCacheKeyForCompat("gpt-5.3-codex-spark"))
 	require.False(t, shouldAutoInjectPromptCacheKeyForCompat("gpt-4o"))
+}
+
+func TestDeriveCompatPromptCacheKey_UsesResolvedGPT55Family(t *testing.T) {
+	req := &apicompat.ChatCompletionsRequest{
+		Model: "gpt-5.5-xhigh",
+		Messages: []apicompat.ChatMessage{
+			{Role: "user", Content: mustRawJSON(t, `"Question A"`)},
+		},
+	}
+
+	k1 := deriveCompatPromptCacheKey(req, "gpt-5.5-xhigh")
+	k2 := deriveCompatPromptCacheKey(req, " openai/gpt-5.5 ")
+	require.NotEmpty(t, k1)
+	require.Equal(t, k1, k2, "resolved GPT-5.5 family should derive a stable compat cache key")
 }
 
 func TestDeriveCompatPromptCacheKey_StableAcrossLaterTurns(t *testing.T) {
