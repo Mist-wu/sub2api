@@ -811,7 +811,7 @@ export default {
     view: '查看',
     history: '历史生图',
     historyEmpty: '暂无历史生图',
-    revisedPrompt: '上游优化提示词',
+    revisedPrompt: 'AI优化提示词',
     generatedAt: '生成时间',
     loadHistoryFailed: '加载历史失败',
     loadFileFailed: '加载图片失败',
