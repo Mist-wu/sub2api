@@ -2002,8 +2002,12 @@ func init() {
 			return nil
 		}
 	}()
+	// userimagegenerationDescThumbnailMimeType is the schema descriptor for thumbnail_mime_type field.
+	userimagegenerationDescThumbnailMimeType := userimagegenerationFields[8].Descriptor()
+	// userimagegeneration.ThumbnailMimeTypeValidator is a validator for the "thumbnail_mime_type" field. It is called by the builders before save.
+	userimagegeneration.ThumbnailMimeTypeValidator = userimagegenerationDescThumbnailMimeType.Validators[0].(func(string) error)
 	// userimagegenerationDescCreatedAt is the schema descriptor for created_at field.
-	userimagegenerationDescCreatedAt := userimagegenerationFields[7].Descriptor()
+	userimagegenerationDescCreatedAt := userimagegenerationFields[9].Descriptor()
 	// userimagegeneration.DefaultCreatedAt holds the default value on creation for the created_at field.
 	userimagegeneration.DefaultCreatedAt = userimagegenerationDescCreatedAt.Default.(func() time.Time)
 	usersubscriptionMixin := schema.UserSubscription{}.Mixin()

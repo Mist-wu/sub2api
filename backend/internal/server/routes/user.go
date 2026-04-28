@@ -74,6 +74,7 @@ func RegisterUserRoutes(
 		images := authenticated.Group("/user/images")
 		{
 			images.POST("/generations", h.Image.Generate)
+			images.GET("/generations/:job_id", h.Image.GetGeneration)
 			images.GET("/history", h.Image.ListHistory)
 			images.GET("/history/:id/file", h.Image.GetHistoryFile)
 		}

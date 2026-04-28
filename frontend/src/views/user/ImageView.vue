@@ -3,13 +3,18 @@
     <div class="mx-auto max-w-6xl space-y-6">
       <div class="card">
         <div class="p-6">
-          <div class="mb-5 flex items-center gap-3">
-            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-300">
-              <Icon name="sparkles" size="lg" />
+          <div class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex items-center gap-3">
+              <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-300">
+                <Icon name="sparkles" size="lg" />
+              </div>
+              <div>
+                <h1 class="text-xl font-semibold text-gray-900 dark:text-white">{{ t('image.title') }}</h1>
+                <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">{{ t('image.description') }}</p>
+              </div>
             </div>
-            <div>
-              <h1 class="text-xl font-semibold text-gray-900 dark:text-white">{{ t('image.title') }}</h1>
-              <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">{{ t('image.description') }}</p>
+            <div class="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 dark:border-dark-700 dark:text-dark-300">
+              {{ t('image.activeJobs', { active: activeJobCount, max: maxConcurrentJobs }) }}
             </div>
           </div>
 
@@ -19,21 +24,22 @@
               v-model="prompt"
               :label="t('image.promptLabel')"
               :placeholder="t('image.promptPlaceholder')"
-              :disabled="generating"
               :error="promptError"
               rows="5"
               required
             />
 
-            <button
-              type="submit"
-              class="btn btn-primary min-h-[44px] w-full sm:w-auto"
-              :disabled="generating || !prompt.trim()"
-            >
-              <LoadingSpinner v-if="generating" size="sm" color="white" class="mr-2" />
-              <Icon v-else name="sparkles" size="sm" class="mr-2" />
-              {{ generating ? t('image.generating') : t('image.generate') }}
-            </button>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <button
+                type="submit"
+                class="btn btn-primary min-h-[44px] w-full sm:w-auto"
+                :disabled="!canSubmit"
+              >
+                <Icon name="sparkles" size="sm" class="mr-2" />
+                {{ activeJobCount >= maxConcurrentJobs ? t('image.concurrencyFull') : t('image.generate') }}
+              </button>
+              <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('image.concurrentHint', { max: maxConcurrentJobs }) }}</p>
+            </div>
           </form>
 
           <transition name="fade">
@@ -55,46 +61,70 @@
 
           <div class="p-6">
             <div
-              v-if="generating"
-              class="flex min-h-[420px] flex-col items-center justify-center rounded-lg border border-dashed border-primary-200 bg-primary-50/60 text-center dark:border-primary-800/60 dark:bg-primary-950/20"
-            >
-              <LoadingSpinner size="xl" />
-              <h3 class="mt-5 text-base font-semibold text-gray-900 dark:text-white">{{ t('image.loadingTitle') }}</h3>
-              <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">{{ t('image.elapsed', { seconds: elapsedSeconds }) }}</p>
-            </div>
-
-            <div v-else-if="activePreview" class="space-y-4">
-              <div class="overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-dark-700 dark:bg-dark-900">
-                <img
-                  :src="activePreview.src"
-                  :alt="activePreview.prompt"
-                  class="max-h-[620px] w-full object-contain"
-                />
-              </div>
-              <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div class="min-w-0">
-                  <p class="break-words text-sm text-gray-700 dark:text-dark-200">{{ activePreview.prompt }}</p>
-                  <p v-if="activePreview.revisedPrompt" class="mt-2 break-words text-xs text-gray-500 dark:text-dark-400">
-                    {{ t('image.revisedPrompt') }}: {{ activePreview.revisedPrompt }}
-                  </p>
-                  <p class="mt-2 text-xs text-gray-500 dark:text-dark-400">
-                    {{ t('image.generatedAt') }}: {{ formatDate(activePreview.createdAt) }}
-                  </p>
-                </div>
-                <button class="btn btn-secondary shrink-0" type="button" @click="downloadImage(activePreview.id, activePreview.mimeType)">
-                  <Icon name="download" size="sm" class="mr-2" />
-                  {{ t('image.download') }}
-                </button>
-              </div>
-            </div>
-
-            <div
-              v-else
+              v-if="resultCards.length === 0"
               class="flex min-h-[420px] flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 text-center dark:border-dark-700 dark:bg-dark-900"
             >
               <Icon name="sparkles" size="xl" class="text-gray-400 dark:text-dark-500" />
               <h3 class="mt-4 text-base font-semibold text-gray-900 dark:text-white">{{ t('image.noResultTitle') }}</h3>
               <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">{{ t('image.noResultHint') }}</p>
+            </div>
+
+            <div v-else class="space-y-4">
+              <article
+                v-for="card in resultCards"
+                :key="card.key"
+                class="rounded-lg border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-900"
+              >
+                <div class="grid gap-4 sm:grid-cols-[180px_minmax(0,1fr)]">
+                  <div class="aspect-square overflow-hidden rounded-lg border border-gray-200 bg-gray-100 dark:border-dark-700 dark:bg-dark-800">
+                    <img
+                      v-if="card.thumbnailSrc"
+                      :src="card.thumbnailSrc"
+                      :alt="card.prompt"
+                      class="h-full w-full object-cover"
+                    />
+                    <div v-else-if="card.status === 'running' || card.status === 'submitting'" class="flex h-full w-full flex-col items-center justify-center gap-3 text-center">
+                      <LoadingSpinner size="lg" />
+                      <span class="text-xs text-gray-500 dark:text-dark-400">{{ t('image.loadingTitle') }}</span>
+                    </div>
+                    <div v-else class="flex h-full w-full items-center justify-center">
+                      <Icon name="sparkles" size="lg" class="text-gray-400 dark:text-dark-500" />
+                    </div>
+                  </div>
+
+                  <div class="min-w-0">
+                    <div class="mb-3 flex flex-wrap items-center gap-2">
+                      <span :class="statusClass(card.status)" class="rounded-full px-2.5 py-1 text-xs font-medium">
+                        {{ statusText(card.status) }}
+                      </span>
+                      <span
+                        v-if="card.status === 'running' || card.status === 'submitting'"
+                        class="text-xs text-gray-500 dark:text-dark-400"
+                      >
+                        {{ t('image.elapsed', { seconds: card.elapsedSeconds }) }}
+                      </span>
+                    </div>
+
+                    <p class="break-words text-sm font-medium text-gray-800 dark:text-dark-100">{{ card.prompt }}</p>
+                    <p v-if="card.revisedPrompt" class="mt-3 break-words text-xs leading-5 text-gray-500 dark:text-dark-400">
+                      {{ t('image.revisedPrompt') }}: {{ card.revisedPrompt }}
+                    </p>
+                    <p v-if="card.errorMessage" class="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+                      {{ card.errorMessage }}
+                    </p>
+                    <p v-if="card.createdAt" class="mt-3 text-xs text-gray-500 dark:text-dark-400">
+                      {{ t('image.generatedAt') }}: {{ formatDate(card.createdAt) }}
+                    </p>
+
+                    <div v-if="card.imageId" class="mt-4 flex flex-wrap gap-2">
+                      <button class="btn btn-secondary btn-sm" type="button" @click="downloadImage(card.imageId, card.mimeType)">
+                        <Icon name="download" size="sm" class="mr-1" />
+                        {{ t('image.download') }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </article>
             </div>
           </div>
         </section>
@@ -123,13 +153,13 @@
                 <button class="flex w-full gap-3 text-left" type="button" @click="viewHistory(item)">
                   <div class="h-20 w-20 shrink-0 overflow-hidden rounded-md bg-gray-100 dark:bg-dark-800">
                     <img
-                      v-if="historyImageUrls[item.id]"
-                      :src="historyImageUrls[item.id]"
+                      v-if="thumbnailSrc(item)"
+                      :src="thumbnailSrc(item)"
                       :alt="item.prompt"
                       class="h-full w-full object-cover"
                     />
                     <div v-else class="flex h-full w-full items-center justify-center">
-                      <LoadingSpinner size="sm" color="secondary" />
+                      <Icon name="sparkles" size="sm" class="text-gray-400 dark:text-dark-500" />
                     </div>
                   </div>
                   <div class="min-w-0 flex-1">
@@ -157,7 +187,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TextArea from '@/components/common/TextArea.vue'
@@ -165,40 +195,50 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { imageAPI, type UserImageGeneration, type UserImageHistoryItem } from '@/api'
 import { useAppStore } from '@/stores'
+import { useImageGenerationJobs, type ImageGenerationClientJob, type ImageGenerationClientJobStatus } from '@/composables/useImageGenerationJobs'
 
-interface ImagePreview {
-  id: number
+interface ResultCard {
+  key: string
+  imageId?: number
   prompt: string
   revisedPrompt?: string | null
   mimeType: string
-  src: string
+  thumbnailSrc: string
+  status: ImageGenerationClientJobStatus | 'history'
+  errorMessage?: string
+  elapsedSeconds: number
   createdAt: string
 }
 
 const { t, locale } = useI18n()
 const appStore = useAppStore()
+const { jobs, activeJobCount, lastCompletedAt, maxConcurrentJobs, startImageJob } = useImageGenerationJobs()
 
 const prompt = ref('')
 const promptError = ref('')
 const errorMessage = ref('')
-const generating = ref(false)
-const elapsedSeconds = ref(0)
-const activePreview = ref<ImagePreview | null>(null)
 const historyItems = ref<UserImageHistoryItem[]>([])
-const historyImageUrls = ref<Record<number, string>>({})
 const historyLoading = ref(false)
-
-let timer: number | undefined
+const selectedHistory = ref<UserImageHistoryItem | null>(null)
 
 const trimmedPrompt = computed(() => prompt.value.trim())
+const canSubmit = computed(() => Boolean(trimmedPrompt.value) && activeJobCount.value < maxConcurrentJobs)
+const resultCards = computed<ResultCard[]>(() => {
+  const cards = jobs.value.map(jobToResultCard)
+  if (selectedHistory.value && !cards.some((card) => card.imageId === selectedHistory.value?.id)) {
+    cards.unshift(historyToResultCard(selectedHistory.value))
+  }
+  return cards
+})
 
 onMounted(() => {
   void loadHistory()
 })
 
-onBeforeUnmount(() => {
-  stopTimer()
-  revokeHistoryUrls()
+watch(lastCompletedAt, (value, oldValue) => {
+  if (value && value !== oldValue) {
+    void loadHistory()
+  }
 })
 
 async function handleGenerate() {
@@ -208,21 +248,19 @@ async function handleGenerate() {
     promptError.value = t('image.promptRequired')
     return
   }
+  if (activeJobCount.value >= maxConcurrentJobs) {
+    errorMessage.value = t('image.concurrencyFullMessage', { max: maxConcurrentJobs })
+    return
+  }
 
-  generating.value = true
-  startTimer()
   try {
-    const result = await imageAPI.generate(trimmedPrompt.value)
-    activePreview.value = previewFromGeneration(result)
-    appStore.showSuccess(t('image.generateSuccess'))
-    await loadHistory()
+    await startImageJob(trimmedPrompt.value)
+    prompt.value = ''
+    appStore.showSuccess(t('image.generateQueued'))
   } catch (error) {
-    const message = getErrorMessage(error) || t('image.generateFailed')
+    const message = mapImageErrorMessage(error)
     errorMessage.value = message
     appStore.showError(message)
-  } finally {
-    generating.value = false
-    stopTimer()
   }
 }
 
@@ -231,7 +269,6 @@ async function loadHistory() {
   try {
     const data = await imageAPI.getHistory(1, 20)
     historyItems.value = data.items || []
-    await Promise.allSettled(historyItems.value.map((item) => ensureHistoryImageUrl(item.id)))
   } catch (error) {
     appStore.showError(getErrorMessage(error) || t('image.loadHistoryFailed'))
   } finally {
@@ -239,29 +276,8 @@ async function loadHistory() {
   }
 }
 
-async function viewHistory(item: UserImageHistoryItem) {
-  try {
-    const src = await ensureHistoryImageUrl(item.id)
-    activePreview.value = {
-      id: item.id,
-      prompt: item.prompt,
-      revisedPrompt: item.revised_prompt,
-      mimeType: item.mime_type,
-      src,
-      createdAt: item.created_at
-    }
-  } catch (error) {
-    appStore.showError(getErrorMessage(error) || t('image.loadFileFailed'))
-  }
-}
-
-async function ensureHistoryImageUrl(id: number): Promise<string> {
-  const existing = historyImageUrls.value[id]
-  if (existing) return existing
-  const blob = await imageAPI.getHistoryFile(id)
-  const url = URL.createObjectURL(blob)
-  historyImageUrls.value = { ...historyImageUrls.value, [id]: url }
-  return url
+function viewHistory(item: UserImageHistoryItem) {
+  selectedHistory.value = item
 }
 
 async function downloadImage(id: number, mimeType: string) {
@@ -280,35 +296,78 @@ async function downloadImage(id: number, mimeType: string) {
   }
 }
 
-function previewFromGeneration(result: UserImageGeneration): ImagePreview {
+function jobToResultCard(job: ImageGenerationClientJob): ResultCard {
+  const result = job.result
   return {
-    id: result.id,
-    prompt: result.prompt,
-    revisedPrompt: result.revised_prompt,
-    mimeType: result.mime_type,
-    src: `data:${result.mime_type};base64,${result.image_base64}`,
-    createdAt: result.created_at
+    key: job.localId,
+    imageId: result?.id,
+    prompt: result?.prompt || job.prompt,
+    revisedPrompt: result?.revised_prompt,
+    mimeType: result?.mime_type || 'image/png',
+    thumbnailSrc: result ? generationPreviewSrc(result) : '',
+    status: job.status,
+    errorMessage: job.errorMessage,
+    elapsedSeconds: job.elapsedSeconds,
+    createdAt: result?.created_at || job.completedAt || job.createdAt,
   }
 }
 
-function startTimer() {
-  stopTimer()
-  elapsedSeconds.value = 0
-  timer = window.setInterval(() => {
-    elapsedSeconds.value += 1
-  }, 1000)
-}
-
-function stopTimer() {
-  if (timer !== undefined) {
-    window.clearInterval(timer)
-    timer = undefined
+function historyToResultCard(item: UserImageHistoryItem): ResultCard {
+  return {
+    key: `history-${item.id}`,
+    imageId: item.id,
+    prompt: item.prompt,
+    revisedPrompt: item.revised_prompt,
+    mimeType: item.mime_type,
+    thumbnailSrc: thumbnailSrc(item),
+    status: 'history',
+    elapsedSeconds: 0,
+    createdAt: item.created_at,
   }
 }
 
-function revokeHistoryUrls() {
-  Object.values(historyImageUrls.value).forEach((url) => URL.revokeObjectURL(url))
-  historyImageUrls.value = {}
+function thumbnailSrc(item: Pick<UserImageHistoryItem, 'thumbnail_base64' | 'thumbnail_mime_type' | 'mime_type'>) {
+  if (!item.thumbnail_base64) {
+    return ''
+  }
+  return `data:${item.thumbnail_mime_type || item.mime_type || 'image/jpeg'};base64,${item.thumbnail_base64}`
+}
+
+function generationPreviewSrc(item: UserImageGeneration) {
+  if (item.thumbnail_base64) {
+    return `data:${item.thumbnail_mime_type || item.mime_type || 'image/jpeg'};base64,${item.thumbnail_base64}`
+  }
+  if (item.image_base64) {
+    return `data:${item.mime_type || 'image/png'};base64,${item.image_base64}`
+  }
+  return ''
+}
+
+function statusText(status: ResultCard['status']) {
+  switch (status) {
+    case 'submitting':
+      return t('image.statusSubmitting')
+    case 'running':
+      return t('image.statusRunning')
+    case 'succeeded':
+      return t('image.statusSucceeded')
+    case 'failed':
+      return t('image.statusFailed')
+    default:
+      return t('image.statusHistory')
+  }
+}
+
+function statusClass(status: ResultCard['status']) {
+  switch (status) {
+    case 'failed':
+      return 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300'
+    case 'running':
+    case 'submitting':
+      return 'bg-primary-100 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300'
+    default:
+      return 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300'
+  }
 }
 
 function formatDate(value: string) {
@@ -336,6 +395,17 @@ function extensionForMimeType(mimeType: string) {
     default:
       return '.png'
   }
+}
+
+function mapImageErrorMessage(error: unknown) {
+  const message = getErrorMessage(error)
+  if (message === 'IMAGE_CONCURRENCY_LIMIT_EXCEEDED') {
+    return t('image.concurrencyFullMessage', { max: maxConcurrentJobs })
+  }
+  if (message === 'IMAGE_PROMPT_REQUIRED') {
+    return t('image.promptRequired')
+  }
+  return message || t('image.generateFailed')
 }
 
 function getErrorMessage(error: unknown) {

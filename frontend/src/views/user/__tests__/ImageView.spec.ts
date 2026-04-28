@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 
 import ImageView from '../ImageView.vue'
+import { resetImageGenerationJobsForTest } from '@/composables/useImageGenerationJobs'
 
-const { generate, getHistory, getHistoryFile, showSuccess, showError } = vi.hoisted(() => ({
+const { generate, getGenerationJob, getHistory, getHistoryFile, showSuccess, showError } = vi.hoisted(() => ({
   generate: vi.fn(),
+  getGenerationJob: vi.fn(),
   getHistory: vi.fn(),
   getHistoryFile: vi.fn(),
   showSuccess: vi.fn(),
@@ -19,6 +21,7 @@ const messages: Record<string, string> = {
   'image.promptRequired': 'Enter a prompt first',
   'image.generate': 'Generate Image',
   'image.generating': 'Generating...',
+  'image.generateQueued': 'Image task started',
   'image.currentResult': 'Current Result',
   'image.noResultTitle': 'No image yet',
   'image.noResultHint': 'Enter a prompt',
@@ -34,11 +37,21 @@ const messages: Record<string, string> = {
   'image.loadFileFailed': 'Failed to load image',
   'image.loadingTitle': 'Generating image',
   'image.elapsed': '{seconds}s elapsed',
+  'image.activeJobs': 'Tasks {active}/{max}',
+  'image.concurrentHint': 'Up to {max} images',
+  'image.concurrencyFull': 'Limit reached',
+  'image.concurrencyFullMessage': 'Wait for one to finish',
+  'image.statusSubmitting': 'Submitting',
+  'image.statusRunning': 'Generating',
+  'image.statusSucceeded': 'Done',
+  'image.statusFailed': 'Failed',
+  'image.statusHistory': 'History',
 }
 
 vi.mock('@/api', () => ({
   imageAPI: {
     generate,
+    getGenerationJob,
     getHistory,
     getHistoryFile,
   },
@@ -71,7 +84,11 @@ const AppLayoutStub = { template: '<div><slot /></div>' }
 
 describe('ImageView', () => {
   beforeEach(() => {
+    vi.useRealTimers()
+    window.localStorage.clear()
+    resetImageGenerationJobsForTest()
     generate.mockReset()
+    getGenerationJob.mockReset()
     getHistory.mockReset()
     getHistoryFile.mockReset()
     showSuccess.mockReset()
@@ -100,14 +117,32 @@ describe('ImageView', () => {
   })
 
   it('renders loading and successful preview', async () => {
+    vi.useFakeTimers()
     generate.mockResolvedValue({
-      id: 12,
+      job_id: 'job-12',
       prompt: 'glass city',
-      revised_prompt: 'cinematic glass city',
-      model: 'gpt-image-2',
-      mime_type: 'image/png',
-      image_base64: 'iVBORw0KGgo=',
+      status: 'running',
       created_at: '2026-04-28T00:00:00Z',
+      started_at: '2026-04-28T00:00:00Z',
+    })
+    getGenerationJob.mockResolvedValue({
+      job_id: 'job-12',
+      prompt: 'glass city',
+      status: 'succeeded',
+      created_at: '2026-04-28T00:00:00Z',
+      started_at: '2026-04-28T00:00:00Z',
+      completed_at: '2026-04-28T00:00:10Z',
+      result: {
+        id: 12,
+        prompt: 'glass city',
+        revised_prompt: 'cinematic glass city',
+        model: 'gpt-image-2',
+        mime_type: 'image/png',
+        image_base64: 'iVBORw0KGgo=',
+        thumbnail_mime_type: 'image/jpeg',
+        thumbnail_base64: 'thumb',
+        created_at: '2026-04-28T00:00:10Z',
+      },
     })
 
     const wrapper = mount(ImageView, {
@@ -124,8 +159,13 @@ describe('ImageView', () => {
     await flushPromises()
 
     expect(generate).toHaveBeenCalledWith('glass city')
-    expect(wrapper.find('img').attributes('src')).toContain('data:image/png;base64,iVBORw0KGgo=')
+    expect(wrapper.text()).toContain('Generating')
+    await vi.advanceTimersByTimeAsync(2500)
+    await flushPromises()
+
+    expect(getGenerationJob).toHaveBeenCalledWith('job-12')
+    expect(wrapper.find('img').attributes('src')).toContain('data:image/jpeg;base64,thumb')
     expect(wrapper.text()).toContain('cinematic glass city')
-    expect(showSuccess).toHaveBeenCalledWith('Image generated')
+    expect(showSuccess).toHaveBeenCalledWith('Image task started')
   })
 })

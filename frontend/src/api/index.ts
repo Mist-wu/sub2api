@@ -13,7 +13,13 @@ export { authAPI, isTotp2FARequired, type LoginResponse } from './auth'
 export { keysAPI } from './keys'
 export { usageAPI } from './usage'
 export { userAPI } from './user'
-export { imageAPI, type UserImageGeneration, type UserImageHistoryItem } from './image'
+export {
+  imageAPI,
+  type UserImageGeneration,
+  type UserImageGenerationJob,
+  type UserImageGenerationJobStatus,
+  type UserImageHistoryItem,
+} from './image'
 export { redeemAPI, type RedeemHistoryItem } from './redeem'
 export { paymentAPI } from './payment'
 export { userGroupsAPI } from './groups'

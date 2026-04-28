@@ -7,7 +7,9 @@ export interface UserImageGeneration {
   revised_prompt?: string | null
   model: string
   mime_type: string
-  image_base64: string
+  image_base64?: string
+  thumbnail_mime_type?: string
+  thumbnail_base64?: string
   created_at: string
 }
 
@@ -18,16 +20,37 @@ export interface UserImageHistoryItem {
   model: string
   mime_type: string
   image_sha256: string
+  thumbnail_mime_type?: string
+  thumbnail_base64?: string
   created_at: string
 }
 
+export type UserImageGenerationJobStatus = 'running' | 'succeeded' | 'failed'
+
+export interface UserImageGenerationJob {
+  job_id: string
+  prompt: string
+  status: UserImageGenerationJobStatus
+  error_message?: string
+  error_reason?: string
+  created_at: string
+  started_at?: string
+  completed_at?: string
+  result?: UserImageGeneration
+}
+
 export const imageAPI = {
-  async generate(prompt: string): Promise<UserImageGeneration> {
-    const response = await apiClient.post<UserImageGeneration>(
+  async generate(prompt: string): Promise<UserImageGenerationJob> {
+    const response = await apiClient.post<UserImageGenerationJob>(
       '/user/images/generations',
       { prompt },
-      { timeout: 180000 }
+      { timeout: 30000 }
     )
+    return response.data
+  },
+
+  async getGenerationJob(jobId: string): Promise<UserImageGenerationJob> {
+    const response = await apiClient.get<UserImageGenerationJob>(`/user/images/generations/${jobId}`)
     return response.data
   },
 

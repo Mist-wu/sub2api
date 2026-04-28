@@ -90,6 +90,16 @@ func ImageSha256(v string) predicate.UserImageGeneration {
 	return predicate.UserImageGeneration(sql.FieldEQ(FieldImageSha256, v))
 }
 
+// ThumbnailData applies equality check predicate on the "thumbnail_data" field. It's identical to ThumbnailDataEQ.
+func ThumbnailData(v []byte) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldEQ(FieldThumbnailData, v))
+}
+
+// ThumbnailMimeType applies equality check predicate on the "thumbnail_mime_type" field. It's identical to ThumbnailMimeTypeEQ.
+func ThumbnailMimeType(v string) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldEQ(FieldThumbnailMimeType, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.UserImageGeneration {
 	return predicate.UserImageGeneration(sql.FieldEQ(FieldCreatedAt, v))
@@ -488,6 +498,131 @@ func ImageSha256EqualFold(v string) predicate.UserImageGeneration {
 // ImageSha256ContainsFold applies the ContainsFold predicate on the "image_sha256" field.
 func ImageSha256ContainsFold(v string) predicate.UserImageGeneration {
 	return predicate.UserImageGeneration(sql.FieldContainsFold(FieldImageSha256, v))
+}
+
+// ThumbnailDataEQ applies the EQ predicate on the "thumbnail_data" field.
+func ThumbnailDataEQ(v []byte) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldEQ(FieldThumbnailData, v))
+}
+
+// ThumbnailDataNEQ applies the NEQ predicate on the "thumbnail_data" field.
+func ThumbnailDataNEQ(v []byte) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldNEQ(FieldThumbnailData, v))
+}
+
+// ThumbnailDataIn applies the In predicate on the "thumbnail_data" field.
+func ThumbnailDataIn(vs ...[]byte) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldIn(FieldThumbnailData, vs...))
+}
+
+// ThumbnailDataNotIn applies the NotIn predicate on the "thumbnail_data" field.
+func ThumbnailDataNotIn(vs ...[]byte) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldNotIn(FieldThumbnailData, vs...))
+}
+
+// ThumbnailDataGT applies the GT predicate on the "thumbnail_data" field.
+func ThumbnailDataGT(v []byte) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldGT(FieldThumbnailData, v))
+}
+
+// ThumbnailDataGTE applies the GTE predicate on the "thumbnail_data" field.
+func ThumbnailDataGTE(v []byte) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldGTE(FieldThumbnailData, v))
+}
+
+// ThumbnailDataLT applies the LT predicate on the "thumbnail_data" field.
+func ThumbnailDataLT(v []byte) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldLT(FieldThumbnailData, v))
+}
+
+// ThumbnailDataLTE applies the LTE predicate on the "thumbnail_data" field.
+func ThumbnailDataLTE(v []byte) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldLTE(FieldThumbnailData, v))
+}
+
+// ThumbnailDataIsNil applies the IsNil predicate on the "thumbnail_data" field.
+func ThumbnailDataIsNil() predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldIsNull(FieldThumbnailData))
+}
+
+// ThumbnailDataNotNil applies the NotNil predicate on the "thumbnail_data" field.
+func ThumbnailDataNotNil() predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldNotNull(FieldThumbnailData))
+}
+
+// ThumbnailMimeTypeEQ applies the EQ predicate on the "thumbnail_mime_type" field.
+func ThumbnailMimeTypeEQ(v string) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldEQ(FieldThumbnailMimeType, v))
+}
+
+// ThumbnailMimeTypeNEQ applies the NEQ predicate on the "thumbnail_mime_type" field.
+func ThumbnailMimeTypeNEQ(v string) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldNEQ(FieldThumbnailMimeType, v))
+}
+
+// ThumbnailMimeTypeIn applies the In predicate on the "thumbnail_mime_type" field.
+func ThumbnailMimeTypeIn(vs ...string) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldIn(FieldThumbnailMimeType, vs...))
+}
+
+// ThumbnailMimeTypeNotIn applies the NotIn predicate on the "thumbnail_mime_type" field.
+func ThumbnailMimeTypeNotIn(vs ...string) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldNotIn(FieldThumbnailMimeType, vs...))
+}
+
+// ThumbnailMimeTypeGT applies the GT predicate on the "thumbnail_mime_type" field.
+func ThumbnailMimeTypeGT(v string) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldGT(FieldThumbnailMimeType, v))
+}
+
+// ThumbnailMimeTypeGTE applies the GTE predicate on the "thumbnail_mime_type" field.
+func ThumbnailMimeTypeGTE(v string) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldGTE(FieldThumbnailMimeType, v))
+}
+
+// ThumbnailMimeTypeLT applies the LT predicate on the "thumbnail_mime_type" field.
+func ThumbnailMimeTypeLT(v string) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldLT(FieldThumbnailMimeType, v))
+}
+
+// ThumbnailMimeTypeLTE applies the LTE predicate on the "thumbnail_mime_type" field.
+func ThumbnailMimeTypeLTE(v string) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldLTE(FieldThumbnailMimeType, v))
+}
+
+// ThumbnailMimeTypeContains applies the Contains predicate on the "thumbnail_mime_type" field.
+func ThumbnailMimeTypeContains(v string) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldContains(FieldThumbnailMimeType, v))
+}
+
+// ThumbnailMimeTypeHasPrefix applies the HasPrefix predicate on the "thumbnail_mime_type" field.
+func ThumbnailMimeTypeHasPrefix(v string) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldHasPrefix(FieldThumbnailMimeType, v))
+}
+
+// ThumbnailMimeTypeHasSuffix applies the HasSuffix predicate on the "thumbnail_mime_type" field.
+func ThumbnailMimeTypeHasSuffix(v string) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldHasSuffix(FieldThumbnailMimeType, v))
+}
+
+// ThumbnailMimeTypeIsNil applies the IsNil predicate on the "thumbnail_mime_type" field.
+func ThumbnailMimeTypeIsNil() predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldIsNull(FieldThumbnailMimeType))
+}
+
+// ThumbnailMimeTypeNotNil applies the NotNil predicate on the "thumbnail_mime_type" field.
+func ThumbnailMimeTypeNotNil() predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldNotNull(FieldThumbnailMimeType))
+}
+
+// ThumbnailMimeTypeEqualFold applies the EqualFold predicate on the "thumbnail_mime_type" field.
+func ThumbnailMimeTypeEqualFold(v string) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldEqualFold(FieldThumbnailMimeType, v))
+}
+
+// ThumbnailMimeTypeContainsFold applies the ContainsFold predicate on the "thumbnail_mime_type" field.
+func ThumbnailMimeTypeContainsFold(v string) predicate.UserImageGeneration {
+	return predicate.UserImageGeneration(sql.FieldContainsFold(FieldThumbnailMimeType, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

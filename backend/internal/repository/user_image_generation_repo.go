@@ -38,6 +38,12 @@ func (r *userImageGenerationRepository) Create(ctx context.Context, item *servic
 	if item.RevisedPrompt != nil {
 		builder.SetRevisedPrompt(*item.RevisedPrompt)
 	}
+	if len(item.ThumbnailData) > 0 {
+		builder.SetThumbnailData(item.ThumbnailData)
+	}
+	if item.ThumbnailMimeType != "" {
+		builder.SetThumbnailMimeType(item.ThumbnailMimeType)
+	}
 	created, err := builder.Save(ctx)
 	if err != nil {
 		return err
@@ -150,7 +156,11 @@ func convertUserImageGeneration(row *dbent.UserImageGeneration, includeData bool
 	if row.RevisedPrompt != nil {
 		item.RevisedPrompt = row.RevisedPrompt
 	}
-	if includeData {
+	if row.ThumbnailMimeType != nil {
+		item.ThumbnailMimeType = *row.ThumbnailMimeType
+	}
+	item.ThumbnailData = append([]byte(nil), row.ThumbnailData...)
+	if includeData || len(item.ThumbnailData) == 0 {
 		item.ImageData = append([]byte(nil), row.ImageData...)
 	}
 	return item

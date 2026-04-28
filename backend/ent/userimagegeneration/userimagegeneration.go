@@ -28,6 +28,10 @@ const (
 	FieldImageData = "image_data"
 	// FieldImageSha256 holds the string denoting the image_sha256 field in the database.
 	FieldImageSha256 = "image_sha256"
+	// FieldThumbnailData holds the string denoting the thumbnail_data field in the database.
+	FieldThumbnailData = "thumbnail_data"
+	// FieldThumbnailMimeType holds the string denoting the thumbnail_mime_type field in the database.
+	FieldThumbnailMimeType = "thumbnail_mime_type"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// EdgeUser holds the string denoting the user edge name in mutations.
@@ -53,6 +57,8 @@ var Columns = []string{
 	FieldMimeType,
 	FieldImageData,
 	FieldImageSha256,
+	FieldThumbnailData,
+	FieldThumbnailMimeType,
 	FieldCreatedAt,
 }
 
@@ -81,6 +87,8 @@ var (
 	ImageDataValidator func([]byte) error
 	// ImageSha256Validator is a validator for the "image_sha256" field. It is called by the builders before save.
 	ImageSha256Validator func(string) error
+	// ThumbnailMimeTypeValidator is a validator for the "thumbnail_mime_type" field. It is called by the builders before save.
+	ThumbnailMimeTypeValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 )
@@ -121,6 +129,11 @@ func ByMimeType(opts ...sql.OrderTermOption) OrderOption {
 // ByImageSha256 orders the results by the image_sha256 field.
 func ByImageSha256(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldImageSha256, opts...).ToFunc()
+}
+
+// ByThumbnailMimeType orders the results by the thumbnail_mime_type field.
+func ByThumbnailMimeType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldThumbnailMimeType, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

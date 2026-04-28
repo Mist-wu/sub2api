@@ -89,6 +89,26 @@ func (_c *UserImageGenerationCreate) SetImageSha256(v string) *UserImageGenerati
 	return _c
 }
 
+// SetThumbnailData sets the "thumbnail_data" field.
+func (_c *UserImageGenerationCreate) SetThumbnailData(v []byte) *UserImageGenerationCreate {
+	_c.mutation.SetThumbnailData(v)
+	return _c
+}
+
+// SetThumbnailMimeType sets the "thumbnail_mime_type" field.
+func (_c *UserImageGenerationCreate) SetThumbnailMimeType(v string) *UserImageGenerationCreate {
+	_c.mutation.SetThumbnailMimeType(v)
+	return _c
+}
+
+// SetNillableThumbnailMimeType sets the "thumbnail_mime_type" field if the given value is not nil.
+func (_c *UserImageGenerationCreate) SetNillableThumbnailMimeType(v *string) *UserImageGenerationCreate {
+	if v != nil {
+		_c.SetThumbnailMimeType(*v)
+	}
+	return _c
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_c *UserImageGenerationCreate) SetCreatedAt(v time.Time) *UserImageGenerationCreate {
 	_c.mutation.SetCreatedAt(v)
@@ -202,6 +222,11 @@ func (_c *UserImageGenerationCreate) check() error {
 			return &ValidationError{Name: "image_sha256", err: fmt.Errorf(`ent: validator failed for field "UserImageGeneration.image_sha256": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.ThumbnailMimeType(); ok {
+		if err := userimagegeneration.ThumbnailMimeTypeValidator(v); err != nil {
+			return &ValidationError{Name: "thumbnail_mime_type", err: fmt.Errorf(`ent: validator failed for field "UserImageGeneration.thumbnail_mime_type": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "UserImageGeneration.created_at"`)}
 	}
@@ -258,6 +283,14 @@ func (_c *UserImageGenerationCreate) createSpec() (*UserImageGeneration, *sqlgra
 	if value, ok := _c.mutation.ImageSha256(); ok {
 		_spec.SetField(userimagegeneration.FieldImageSha256, field.TypeString, value)
 		_node.ImageSha256 = value
+	}
+	if value, ok := _c.mutation.ThumbnailData(); ok {
+		_spec.SetField(userimagegeneration.FieldThumbnailData, field.TypeBytes, value)
+		_node.ThumbnailData = value
+	}
+	if value, ok := _c.mutation.ThumbnailMimeType(); ok {
+		_spec.SetField(userimagegeneration.FieldThumbnailMimeType, field.TypeString, value)
+		_node.ThumbnailMimeType = &value
 	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(userimagegeneration.FieldCreatedAt, field.TypeTime, value)
@@ -422,6 +455,42 @@ func (u *UserImageGenerationUpsert) UpdateImageSha256() *UserImageGenerationUpse
 	return u
 }
 
+// SetThumbnailData sets the "thumbnail_data" field.
+func (u *UserImageGenerationUpsert) SetThumbnailData(v []byte) *UserImageGenerationUpsert {
+	u.Set(userimagegeneration.FieldThumbnailData, v)
+	return u
+}
+
+// UpdateThumbnailData sets the "thumbnail_data" field to the value that was provided on create.
+func (u *UserImageGenerationUpsert) UpdateThumbnailData() *UserImageGenerationUpsert {
+	u.SetExcluded(userimagegeneration.FieldThumbnailData)
+	return u
+}
+
+// ClearThumbnailData clears the value of the "thumbnail_data" field.
+func (u *UserImageGenerationUpsert) ClearThumbnailData() *UserImageGenerationUpsert {
+	u.SetNull(userimagegeneration.FieldThumbnailData)
+	return u
+}
+
+// SetThumbnailMimeType sets the "thumbnail_mime_type" field.
+func (u *UserImageGenerationUpsert) SetThumbnailMimeType(v string) *UserImageGenerationUpsert {
+	u.Set(userimagegeneration.FieldThumbnailMimeType, v)
+	return u
+}
+
+// UpdateThumbnailMimeType sets the "thumbnail_mime_type" field to the value that was provided on create.
+func (u *UserImageGenerationUpsert) UpdateThumbnailMimeType() *UserImageGenerationUpsert {
+	u.SetExcluded(userimagegeneration.FieldThumbnailMimeType)
+	return u
+}
+
+// ClearThumbnailMimeType clears the value of the "thumbnail_mime_type" field.
+func (u *UserImageGenerationUpsert) ClearThumbnailMimeType() *UserImageGenerationUpsert {
+	u.SetNull(userimagegeneration.FieldThumbnailMimeType)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -569,6 +638,48 @@ func (u *UserImageGenerationUpsertOne) SetImageSha256(v string) *UserImageGenera
 func (u *UserImageGenerationUpsertOne) UpdateImageSha256() *UserImageGenerationUpsertOne {
 	return u.Update(func(s *UserImageGenerationUpsert) {
 		s.UpdateImageSha256()
+	})
+}
+
+// SetThumbnailData sets the "thumbnail_data" field.
+func (u *UserImageGenerationUpsertOne) SetThumbnailData(v []byte) *UserImageGenerationUpsertOne {
+	return u.Update(func(s *UserImageGenerationUpsert) {
+		s.SetThumbnailData(v)
+	})
+}
+
+// UpdateThumbnailData sets the "thumbnail_data" field to the value that was provided on create.
+func (u *UserImageGenerationUpsertOne) UpdateThumbnailData() *UserImageGenerationUpsertOne {
+	return u.Update(func(s *UserImageGenerationUpsert) {
+		s.UpdateThumbnailData()
+	})
+}
+
+// ClearThumbnailData clears the value of the "thumbnail_data" field.
+func (u *UserImageGenerationUpsertOne) ClearThumbnailData() *UserImageGenerationUpsertOne {
+	return u.Update(func(s *UserImageGenerationUpsert) {
+		s.ClearThumbnailData()
+	})
+}
+
+// SetThumbnailMimeType sets the "thumbnail_mime_type" field.
+func (u *UserImageGenerationUpsertOne) SetThumbnailMimeType(v string) *UserImageGenerationUpsertOne {
+	return u.Update(func(s *UserImageGenerationUpsert) {
+		s.SetThumbnailMimeType(v)
+	})
+}
+
+// UpdateThumbnailMimeType sets the "thumbnail_mime_type" field to the value that was provided on create.
+func (u *UserImageGenerationUpsertOne) UpdateThumbnailMimeType() *UserImageGenerationUpsertOne {
+	return u.Update(func(s *UserImageGenerationUpsert) {
+		s.UpdateThumbnailMimeType()
+	})
+}
+
+// ClearThumbnailMimeType clears the value of the "thumbnail_mime_type" field.
+func (u *UserImageGenerationUpsertOne) ClearThumbnailMimeType() *UserImageGenerationUpsertOne {
+	return u.Update(func(s *UserImageGenerationUpsert) {
+		s.ClearThumbnailMimeType()
 	})
 }
 
@@ -885,6 +996,48 @@ func (u *UserImageGenerationUpsertBulk) SetImageSha256(v string) *UserImageGener
 func (u *UserImageGenerationUpsertBulk) UpdateImageSha256() *UserImageGenerationUpsertBulk {
 	return u.Update(func(s *UserImageGenerationUpsert) {
 		s.UpdateImageSha256()
+	})
+}
+
+// SetThumbnailData sets the "thumbnail_data" field.
+func (u *UserImageGenerationUpsertBulk) SetThumbnailData(v []byte) *UserImageGenerationUpsertBulk {
+	return u.Update(func(s *UserImageGenerationUpsert) {
+		s.SetThumbnailData(v)
+	})
+}
+
+// UpdateThumbnailData sets the "thumbnail_data" field to the value that was provided on create.
+func (u *UserImageGenerationUpsertBulk) UpdateThumbnailData() *UserImageGenerationUpsertBulk {
+	return u.Update(func(s *UserImageGenerationUpsert) {
+		s.UpdateThumbnailData()
+	})
+}
+
+// ClearThumbnailData clears the value of the "thumbnail_data" field.
+func (u *UserImageGenerationUpsertBulk) ClearThumbnailData() *UserImageGenerationUpsertBulk {
+	return u.Update(func(s *UserImageGenerationUpsert) {
+		s.ClearThumbnailData()
+	})
+}
+
+// SetThumbnailMimeType sets the "thumbnail_mime_type" field.
+func (u *UserImageGenerationUpsertBulk) SetThumbnailMimeType(v string) *UserImageGenerationUpsertBulk {
+	return u.Update(func(s *UserImageGenerationUpsert) {
+		s.SetThumbnailMimeType(v)
+	})
+}
+
+// UpdateThumbnailMimeType sets the "thumbnail_mime_type" field to the value that was provided on create.
+func (u *UserImageGenerationUpsertBulk) UpdateThumbnailMimeType() *UserImageGenerationUpsertBulk {
+	return u.Update(func(s *UserImageGenerationUpsert) {
+		s.UpdateThumbnailMimeType()
+	})
+}
+
+// ClearThumbnailMimeType clears the value of the "thumbnail_mime_type" field.
+func (u *UserImageGenerationUpsertBulk) ClearThumbnailMimeType() *UserImageGenerationUpsertBulk {
+	return u.Update(func(s *UserImageGenerationUpsert) {
+		s.ClearThumbnailMimeType()
 	})
 }
 

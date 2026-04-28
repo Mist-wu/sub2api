@@ -42531,22 +42531,24 @@ func (m *UserAttributeValueMutation) ResetEdge(name string) error {
 // UserImageGenerationMutation represents an operation that mutates the UserImageGeneration nodes in the graph.
 type UserImageGenerationMutation struct {
 	config
-	op             Op
-	typ            string
-	id             *int64
-	prompt         *string
-	revised_prompt *string
-	model          *string
-	mime_type      *string
-	image_data     *[]byte
-	image_sha256   *string
-	created_at     *time.Time
-	clearedFields  map[string]struct{}
-	user           *int64
-	cleareduser    bool
-	done           bool
-	oldValue       func(context.Context) (*UserImageGeneration, error)
-	predicates     []predicate.UserImageGeneration
+	op                  Op
+	typ                 string
+	id                  *int64
+	prompt              *string
+	revised_prompt      *string
+	model               *string
+	mime_type           *string
+	image_data          *[]byte
+	image_sha256        *string
+	thumbnail_data      *[]byte
+	thumbnail_mime_type *string
+	created_at          *time.Time
+	clearedFields       map[string]struct{}
+	user                *int64
+	cleareduser         bool
+	done                bool
+	oldValue            func(context.Context) (*UserImageGeneration, error)
+	predicates          []predicate.UserImageGeneration
 }
 
 var _ ent.Mutation = (*UserImageGenerationMutation)(nil)
@@ -42912,6 +42914,104 @@ func (m *UserImageGenerationMutation) ResetImageSha256() {
 	m.image_sha256 = nil
 }
 
+// SetThumbnailData sets the "thumbnail_data" field.
+func (m *UserImageGenerationMutation) SetThumbnailData(b []byte) {
+	m.thumbnail_data = &b
+}
+
+// ThumbnailData returns the value of the "thumbnail_data" field in the mutation.
+func (m *UserImageGenerationMutation) ThumbnailData() (r []byte, exists bool) {
+	v := m.thumbnail_data
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldThumbnailData returns the old "thumbnail_data" field's value of the UserImageGeneration entity.
+// If the UserImageGeneration object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserImageGenerationMutation) OldThumbnailData(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldThumbnailData is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldThumbnailData requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldThumbnailData: %w", err)
+	}
+	return oldValue.ThumbnailData, nil
+}
+
+// ClearThumbnailData clears the value of the "thumbnail_data" field.
+func (m *UserImageGenerationMutation) ClearThumbnailData() {
+	m.thumbnail_data = nil
+	m.clearedFields[userimagegeneration.FieldThumbnailData] = struct{}{}
+}
+
+// ThumbnailDataCleared returns if the "thumbnail_data" field was cleared in this mutation.
+func (m *UserImageGenerationMutation) ThumbnailDataCleared() bool {
+	_, ok := m.clearedFields[userimagegeneration.FieldThumbnailData]
+	return ok
+}
+
+// ResetThumbnailData resets all changes to the "thumbnail_data" field.
+func (m *UserImageGenerationMutation) ResetThumbnailData() {
+	m.thumbnail_data = nil
+	delete(m.clearedFields, userimagegeneration.FieldThumbnailData)
+}
+
+// SetThumbnailMimeType sets the "thumbnail_mime_type" field.
+func (m *UserImageGenerationMutation) SetThumbnailMimeType(s string) {
+	m.thumbnail_mime_type = &s
+}
+
+// ThumbnailMimeType returns the value of the "thumbnail_mime_type" field in the mutation.
+func (m *UserImageGenerationMutation) ThumbnailMimeType() (r string, exists bool) {
+	v := m.thumbnail_mime_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldThumbnailMimeType returns the old "thumbnail_mime_type" field's value of the UserImageGeneration entity.
+// If the UserImageGeneration object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserImageGenerationMutation) OldThumbnailMimeType(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldThumbnailMimeType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldThumbnailMimeType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldThumbnailMimeType: %w", err)
+	}
+	return oldValue.ThumbnailMimeType, nil
+}
+
+// ClearThumbnailMimeType clears the value of the "thumbnail_mime_type" field.
+func (m *UserImageGenerationMutation) ClearThumbnailMimeType() {
+	m.thumbnail_mime_type = nil
+	m.clearedFields[userimagegeneration.FieldThumbnailMimeType] = struct{}{}
+}
+
+// ThumbnailMimeTypeCleared returns if the "thumbnail_mime_type" field was cleared in this mutation.
+func (m *UserImageGenerationMutation) ThumbnailMimeTypeCleared() bool {
+	_, ok := m.clearedFields[userimagegeneration.FieldThumbnailMimeType]
+	return ok
+}
+
+// ResetThumbnailMimeType resets all changes to the "thumbnail_mime_type" field.
+func (m *UserImageGenerationMutation) ResetThumbnailMimeType() {
+	m.thumbnail_mime_type = nil
+	delete(m.clearedFields, userimagegeneration.FieldThumbnailMimeType)
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (m *UserImageGenerationMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
@@ -43009,7 +43109,7 @@ func (m *UserImageGenerationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserImageGenerationMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 10)
 	if m.user != nil {
 		fields = append(fields, userimagegeneration.FieldUserID)
 	}
@@ -43030,6 +43130,12 @@ func (m *UserImageGenerationMutation) Fields() []string {
 	}
 	if m.image_sha256 != nil {
 		fields = append(fields, userimagegeneration.FieldImageSha256)
+	}
+	if m.thumbnail_data != nil {
+		fields = append(fields, userimagegeneration.FieldThumbnailData)
+	}
+	if m.thumbnail_mime_type != nil {
+		fields = append(fields, userimagegeneration.FieldThumbnailMimeType)
 	}
 	if m.created_at != nil {
 		fields = append(fields, userimagegeneration.FieldCreatedAt)
@@ -43056,6 +43162,10 @@ func (m *UserImageGenerationMutation) Field(name string) (ent.Value, bool) {
 		return m.ImageData()
 	case userimagegeneration.FieldImageSha256:
 		return m.ImageSha256()
+	case userimagegeneration.FieldThumbnailData:
+		return m.ThumbnailData()
+	case userimagegeneration.FieldThumbnailMimeType:
+		return m.ThumbnailMimeType()
 	case userimagegeneration.FieldCreatedAt:
 		return m.CreatedAt()
 	}
@@ -43081,6 +43191,10 @@ func (m *UserImageGenerationMutation) OldField(ctx context.Context, name string)
 		return m.OldImageData(ctx)
 	case userimagegeneration.FieldImageSha256:
 		return m.OldImageSha256(ctx)
+	case userimagegeneration.FieldThumbnailData:
+		return m.OldThumbnailData(ctx)
+	case userimagegeneration.FieldThumbnailMimeType:
+		return m.OldThumbnailMimeType(ctx)
 	case userimagegeneration.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	}
@@ -43141,6 +43255,20 @@ func (m *UserImageGenerationMutation) SetField(name string, value ent.Value) err
 		}
 		m.SetImageSha256(v)
 		return nil
+	case userimagegeneration.FieldThumbnailData:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetThumbnailData(v)
+		return nil
+	case userimagegeneration.FieldThumbnailMimeType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetThumbnailMimeType(v)
+		return nil
 	case userimagegeneration.FieldCreatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -43184,6 +43312,12 @@ func (m *UserImageGenerationMutation) ClearedFields() []string {
 	if m.FieldCleared(userimagegeneration.FieldRevisedPrompt) {
 		fields = append(fields, userimagegeneration.FieldRevisedPrompt)
 	}
+	if m.FieldCleared(userimagegeneration.FieldThumbnailData) {
+		fields = append(fields, userimagegeneration.FieldThumbnailData)
+	}
+	if m.FieldCleared(userimagegeneration.FieldThumbnailMimeType) {
+		fields = append(fields, userimagegeneration.FieldThumbnailMimeType)
+	}
 	return fields
 }
 
@@ -43200,6 +43334,12 @@ func (m *UserImageGenerationMutation) ClearField(name string) error {
 	switch name {
 	case userimagegeneration.FieldRevisedPrompt:
 		m.ClearRevisedPrompt()
+		return nil
+	case userimagegeneration.FieldThumbnailData:
+		m.ClearThumbnailData()
+		return nil
+	case userimagegeneration.FieldThumbnailMimeType:
+		m.ClearThumbnailMimeType()
 		return nil
 	}
 	return fmt.Errorf("unknown UserImageGeneration nullable field %s", name)
@@ -43229,6 +43369,12 @@ func (m *UserImageGenerationMutation) ResetField(name string) error {
 		return nil
 	case userimagegeneration.FieldImageSha256:
 		m.ResetImageSha256()
+		return nil
+	case userimagegeneration.FieldThumbnailData:
+		m.ResetThumbnailData()
+		return nil
+	case userimagegeneration.FieldThumbnailMimeType:
+		m.ResetThumbnailMimeType()
 		return nil
 	case userimagegeneration.FieldCreatedAt:
 		m.ResetCreatedAt()

@@ -48,6 +48,13 @@ func (UserImageGeneration) Fields() []ent.Field {
 		field.String("image_sha256").
 			MaxLen(64).
 			NotEmpty(),
+		field.Bytes("thumbnail_data").
+			Optional().
+			SchemaType(map[string]string{dialect.Postgres: "bytea"}),
+		field.String("thumbnail_mime_type").
+			MaxLen(100).
+			Optional().
+			Nillable(),
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable().

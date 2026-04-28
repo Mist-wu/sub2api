@@ -124,6 +124,38 @@ func (_u *UserImageGenerationUpdate) SetNillableImageSha256(v *string) *UserImag
 	return _u
 }
 
+// SetThumbnailData sets the "thumbnail_data" field.
+func (_u *UserImageGenerationUpdate) SetThumbnailData(v []byte) *UserImageGenerationUpdate {
+	_u.mutation.SetThumbnailData(v)
+	return _u
+}
+
+// ClearThumbnailData clears the value of the "thumbnail_data" field.
+func (_u *UserImageGenerationUpdate) ClearThumbnailData() *UserImageGenerationUpdate {
+	_u.mutation.ClearThumbnailData()
+	return _u
+}
+
+// SetThumbnailMimeType sets the "thumbnail_mime_type" field.
+func (_u *UserImageGenerationUpdate) SetThumbnailMimeType(v string) *UserImageGenerationUpdate {
+	_u.mutation.SetThumbnailMimeType(v)
+	return _u
+}
+
+// SetNillableThumbnailMimeType sets the "thumbnail_mime_type" field if the given value is not nil.
+func (_u *UserImageGenerationUpdate) SetNillableThumbnailMimeType(v *string) *UserImageGenerationUpdate {
+	if v != nil {
+		_u.SetThumbnailMimeType(*v)
+	}
+	return _u
+}
+
+// ClearThumbnailMimeType clears the value of the "thumbnail_mime_type" field.
+func (_u *UserImageGenerationUpdate) ClearThumbnailMimeType() *UserImageGenerationUpdate {
+	_u.mutation.ClearThumbnailMimeType()
+	return _u
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (_u *UserImageGenerationUpdate) SetUser(v *User) *UserImageGenerationUpdate {
 	return _u.SetUserID(v.ID)
@@ -194,6 +226,11 @@ func (_u *UserImageGenerationUpdate) check() error {
 			return &ValidationError{Name: "image_sha256", err: fmt.Errorf(`ent: validator failed for field "UserImageGeneration.image_sha256": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ThumbnailMimeType(); ok {
+		if err := userimagegeneration.ThumbnailMimeTypeValidator(v); err != nil {
+			return &ValidationError{Name: "thumbnail_mime_type", err: fmt.Errorf(`ent: validator failed for field "UserImageGeneration.thumbnail_mime_type": %w`, err)}
+		}
+	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "UserImageGeneration.user"`)
 	}
@@ -232,6 +269,18 @@ func (_u *UserImageGenerationUpdate) sqlSave(ctx context.Context) (_node int, er
 	}
 	if value, ok := _u.mutation.ImageSha256(); ok {
 		_spec.SetField(userimagegeneration.FieldImageSha256, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ThumbnailData(); ok {
+		_spec.SetField(userimagegeneration.FieldThumbnailData, field.TypeBytes, value)
+	}
+	if _u.mutation.ThumbnailDataCleared() {
+		_spec.ClearField(userimagegeneration.FieldThumbnailData, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.ThumbnailMimeType(); ok {
+		_spec.SetField(userimagegeneration.FieldThumbnailMimeType, field.TypeString, value)
+	}
+	if _u.mutation.ThumbnailMimeTypeCleared() {
+		_spec.ClearField(userimagegeneration.FieldThumbnailMimeType, field.TypeString)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -378,6 +427,38 @@ func (_u *UserImageGenerationUpdateOne) SetNillableImageSha256(v *string) *UserI
 	return _u
 }
 
+// SetThumbnailData sets the "thumbnail_data" field.
+func (_u *UserImageGenerationUpdateOne) SetThumbnailData(v []byte) *UserImageGenerationUpdateOne {
+	_u.mutation.SetThumbnailData(v)
+	return _u
+}
+
+// ClearThumbnailData clears the value of the "thumbnail_data" field.
+func (_u *UserImageGenerationUpdateOne) ClearThumbnailData() *UserImageGenerationUpdateOne {
+	_u.mutation.ClearThumbnailData()
+	return _u
+}
+
+// SetThumbnailMimeType sets the "thumbnail_mime_type" field.
+func (_u *UserImageGenerationUpdateOne) SetThumbnailMimeType(v string) *UserImageGenerationUpdateOne {
+	_u.mutation.SetThumbnailMimeType(v)
+	return _u
+}
+
+// SetNillableThumbnailMimeType sets the "thumbnail_mime_type" field if the given value is not nil.
+func (_u *UserImageGenerationUpdateOne) SetNillableThumbnailMimeType(v *string) *UserImageGenerationUpdateOne {
+	if v != nil {
+		_u.SetThumbnailMimeType(*v)
+	}
+	return _u
+}
+
+// ClearThumbnailMimeType clears the value of the "thumbnail_mime_type" field.
+func (_u *UserImageGenerationUpdateOne) ClearThumbnailMimeType() *UserImageGenerationUpdateOne {
+	_u.mutation.ClearThumbnailMimeType()
+	return _u
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (_u *UserImageGenerationUpdateOne) SetUser(v *User) *UserImageGenerationUpdateOne {
 	return _u.SetUserID(v.ID)
@@ -461,6 +542,11 @@ func (_u *UserImageGenerationUpdateOne) check() error {
 			return &ValidationError{Name: "image_sha256", err: fmt.Errorf(`ent: validator failed for field "UserImageGeneration.image_sha256": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ThumbnailMimeType(); ok {
+		if err := userimagegeneration.ThumbnailMimeTypeValidator(v); err != nil {
+			return &ValidationError{Name: "thumbnail_mime_type", err: fmt.Errorf(`ent: validator failed for field "UserImageGeneration.thumbnail_mime_type": %w`, err)}
+		}
+	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "UserImageGeneration.user"`)
 	}
@@ -516,6 +602,18 @@ func (_u *UserImageGenerationUpdateOne) sqlSave(ctx context.Context) (_node *Use
 	}
 	if value, ok := _u.mutation.ImageSha256(); ok {
 		_spec.SetField(userimagegeneration.FieldImageSha256, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ThumbnailData(); ok {
+		_spec.SetField(userimagegeneration.FieldThumbnailData, field.TypeBytes, value)
+	}
+	if _u.mutation.ThumbnailDataCleared() {
+		_spec.ClearField(userimagegeneration.FieldThumbnailData, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.ThumbnailMimeType(); ok {
+		_spec.SetField(userimagegeneration.FieldThumbnailMimeType, field.TypeString, value)
+	}
+	if _u.mutation.ThumbnailMimeTypeCleared() {
+		_spec.ClearField(userimagegeneration.FieldThumbnailMimeType, field.TypeString)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{

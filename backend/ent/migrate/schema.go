@@ -1596,6 +1596,8 @@ var (
 		{Name: "mime_type", Type: field.TypeString, Size: 100, Default: "image/png"},
 		{Name: "image_data", Type: field.TypeBytes, SchemaType: map[string]string{"postgres": "bytea"}},
 		{Name: "image_sha256", Type: field.TypeString, Size: 64},
+		{Name: "thumbnail_data", Type: field.TypeBytes, Nullable: true, SchemaType: map[string]string{"postgres": "bytea"}},
+		{Name: "thumbnail_mime_type", Type: field.TypeString, Nullable: true, Size: 100},
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
 		{Name: "user_id", Type: field.TypeInt64},
 	}
@@ -1607,7 +1609,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "user_image_generations_users_image_generations",
-				Columns:    []*schema.Column{UserImageGenerationsColumns[8]},
+				Columns:    []*schema.Column{UserImageGenerationsColumns[10]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -1616,17 +1618,17 @@ var (
 			{
 				Name:    "userimagegeneration_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{UserImageGenerationsColumns[8]},
+				Columns: []*schema.Column{UserImageGenerationsColumns[10]},
 			},
 			{
 				Name:    "userimagegeneration_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UserImageGenerationsColumns[7]},
+				Columns: []*schema.Column{UserImageGenerationsColumns[9]},
 			},
 			{
 				Name:    "userimagegeneration_user_id_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UserImageGenerationsColumns[8], UserImageGenerationsColumns[7]},
+				Columns: []*schema.Column{UserImageGenerationsColumns[10], UserImageGenerationsColumns[9]},
 			},
 			{
 				Name:    "userimagegeneration_image_sha256",

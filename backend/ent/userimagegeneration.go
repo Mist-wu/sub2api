@@ -32,6 +32,10 @@ type UserImageGeneration struct {
 	ImageData []byte `json:"image_data,omitempty"`
 	// ImageSha256 holds the value of the "image_sha256" field.
 	ImageSha256 string `json:"image_sha256,omitempty"`
+	// ThumbnailData holds the value of the "thumbnail_data" field.
+	ThumbnailData []byte `json:"thumbnail_data,omitempty"`
+	// ThumbnailMimeType holds the value of the "thumbnail_mime_type" field.
+	ThumbnailMimeType *string `json:"thumbnail_mime_type,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -65,11 +69,11 @@ func (*UserImageGeneration) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case userimagegeneration.FieldImageData:
+		case userimagegeneration.FieldImageData, userimagegeneration.FieldThumbnailData:
 			values[i] = new([]byte)
 		case userimagegeneration.FieldID, userimagegeneration.FieldUserID:
 			values[i] = new(sql.NullInt64)
-		case userimagegeneration.FieldPrompt, userimagegeneration.FieldRevisedPrompt, userimagegeneration.FieldModel, userimagegeneration.FieldMimeType, userimagegeneration.FieldImageSha256:
+		case userimagegeneration.FieldPrompt, userimagegeneration.FieldRevisedPrompt, userimagegeneration.FieldModel, userimagegeneration.FieldMimeType, userimagegeneration.FieldImageSha256, userimagegeneration.FieldThumbnailMimeType:
 			values[i] = new(sql.NullString)
 		case userimagegeneration.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -136,6 +140,19 @@ func (_m *UserImageGeneration) assignValues(columns []string, values []any) erro
 				return fmt.Errorf("unexpected type %T for field image_sha256", values[i])
 			} else if value.Valid {
 				_m.ImageSha256 = value.String
+			}
+		case userimagegeneration.FieldThumbnailData:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field thumbnail_data", values[i])
+			} else if value != nil {
+				_m.ThumbnailData = *value
+			}
+		case userimagegeneration.FieldThumbnailMimeType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field thumbnail_mime_type", values[i])
+			} else if value.Valid {
+				_m.ThumbnailMimeType = new(string)
+				*_m.ThumbnailMimeType = value.String
 			}
 		case userimagegeneration.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -206,6 +223,14 @@ func (_m *UserImageGeneration) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("image_sha256=")
 	builder.WriteString(_m.ImageSha256)
+	builder.WriteString(", ")
+	builder.WriteString("thumbnail_data=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ThumbnailData))
+	builder.WriteString(", ")
+	if v := _m.ThumbnailMimeType; v != nil {
+		builder.WriteString("thumbnail_mime_type=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))

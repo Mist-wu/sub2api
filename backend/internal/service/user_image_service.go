@@ -1,31 +1,46 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	stderrors "errors"
 	"fmt"
+	"image"
+	"image/color"
+	stddraw "image/draw"
+	_ "image/gif"
+	"image/jpeg"
+	_ "image/png"
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	infraerrors "github.com/Mist-wu/sub2api/internal/pkg/errors"
 	"github.com/Mist-wu/sub2api/internal/pkg/pagination"
 	"github.com/tidwall/gjson"
+	xdraw "golang.org/x/image/draw"
+	_ "golang.org/x/image/webp"
 )
 
 const (
 	UserImageModel            = "gpt-image-2"
 	UserImageDailyLimit       = 100
-	UserImageConcurrencyLimit = 8
+	UserImageConcurrencyLimit = 3
 	UserImageHistoryLimit     = 100
 	UserImagePromptMaxLength  = 4000
 
 	userImageGenerationLimitTTL = 15 * time.Minute
+	userImageJobTimeout         = 10 * time.Minute
+	userImageJobRetention       = time.Hour
+	userImageThumbnailMaxDim    = 360
+	userImageThumbnailQuality   = 82
 )
 
 var (
@@ -41,15 +56,40 @@ var (
 
 // UserImageGeneration is the persisted free image generation record.
 type UserImageGeneration struct {
-	ID            int64
-	UserID        int64
-	Prompt        string
-	RevisedPrompt *string
-	Model         string
-	MimeType      string
-	ImageData     []byte
-	ImageSHA256   string
-	CreatedAt     time.Time
+	ID                int64
+	UserID            int64
+	Prompt            string
+	RevisedPrompt     *string
+	Model             string
+	MimeType          string
+	ImageData         []byte
+	ImageSHA256       string
+	ThumbnailData     []byte
+	ThumbnailMimeType string
+	CreatedAt         time.Time
+}
+
+// UserImageJobStatus describes an asynchronous image generation job state.
+type UserImageJobStatus string
+
+const (
+	UserImageJobStatusRunning   UserImageJobStatus = "running"
+	UserImageJobStatusSucceeded UserImageJobStatus = "succeeded"
+	UserImageJobStatusFailed    UserImageJobStatus = "failed"
+)
+
+// UserImageJob is an in-memory async generation job.
+type UserImageJob struct {
+	ID           string
+	UserID       int64
+	Prompt       string
+	Status       UserImageJobStatus
+	Result       *UserImageGeneration
+	ErrorMessage string
+	ErrorReason  string
+	CreatedAt    time.Time
+	StartedAt    time.Time
+	CompletedAt  time.Time
 }
 
 // UserImageGenerationRepository stores user-side image generations.
@@ -72,6 +112,10 @@ type UserImageService struct {
 	limitStore    UserImageLimitStore
 	apiKeyService *APIKeyService
 	openaiGateway *OpenAIGatewayService
+
+	jobsMu     sync.Mutex
+	jobs       map[string]*UserImageJob
+	activeJobs map[int64]int
 }
 
 // NewUserImageService creates a user image service.
@@ -86,7 +130,63 @@ func NewUserImageService(
 		limitStore:    limitStore,
 		apiKeyService: apiKeyService,
 		openaiGateway: openaiGateway,
+		jobs:          make(map[string]*UserImageJob),
+		activeJobs:    make(map[int64]int),
 	}
+}
+
+// StartGenerationJob starts one free image generation in the background.
+func (s *UserImageService) StartGenerationJob(ctx context.Context, userID int64, prompt string) (*UserImageJob, error) {
+	if s == nil || s.repo == nil || s.apiKeyService == nil || s.openaiGateway == nil {
+		return nil, infraerrors.ServiceUnavailable("IMAGE_SERVICE_UNAVAILABLE", "绘图服务暂不可用")
+	}
+	normalizedPrompt, err := normalizeUserImagePrompt(prompt)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+	job := &UserImageJob{
+		ID:        newUserImageJobID(),
+		UserID:    userID,
+		Prompt:    normalizedPrompt,
+		Status:    UserImageJobStatusRunning,
+		CreatedAt: now,
+		StartedAt: now,
+	}
+
+	s.jobsMu.Lock()
+	s.pruneUserImageJobsLocked(now)
+	if s.activeJobs[userID] >= UserImageConcurrencyLimit {
+		s.jobsMu.Unlock()
+		return nil, ErrUserImageConcurrency
+	}
+	s.activeJobs[userID]++
+	s.jobs[job.ID] = job
+	s.jobsMu.Unlock()
+
+	go s.runGenerationJob(job.ID, userID, normalizedPrompt)
+
+	return cloneUserImageJob(job), nil
+}
+
+// GetGenerationJob returns a background job owned by the current user.
+func (s *UserImageService) GetGenerationJob(ctx context.Context, userID int64, jobID string) (*UserImageJob, error) {
+	if s == nil {
+		return nil, infraerrors.ServiceUnavailable("IMAGE_SERVICE_UNAVAILABLE", "绘图服务暂不可用")
+	}
+	jobID = strings.TrimSpace(jobID)
+	if jobID == "" {
+		return nil, ErrUserImageNotFound
+	}
+	s.jobsMu.Lock()
+	defer s.jobsMu.Unlock()
+	s.pruneUserImageJobsLocked(time.Now())
+	job := s.jobs[jobID]
+	if job == nil || job.UserID != userID {
+		return nil, ErrUserImageNotFound
+	}
+	return cloneUserImageJob(job), nil
 }
 
 // Generate creates one free image for a logged-in user.
@@ -95,12 +195,9 @@ func (s *UserImageService) Generate(ctx context.Context, userID int64, prompt st
 		return nil, infraerrors.ServiceUnavailable("IMAGE_SERVICE_UNAVAILABLE", "绘图服务暂不可用")
 	}
 
-	normalizedPrompt := strings.TrimSpace(prompt)
-	if normalizedPrompt == "" {
-		return nil, ErrUserImagePromptRequired
-	}
-	if len([]rune(normalizedPrompt)) > UserImagePromptMaxLength {
-		return nil, ErrUserImagePromptTooLong
+	normalizedPrompt, err := normalizeUserImagePrompt(prompt)
+	if err != nil {
+		return nil, err
 	}
 
 	groups, err := s.openAIUserImageGroups(ctx, userID)
@@ -154,6 +251,10 @@ func (s *UserImageService) Generate(ctx context.Context, userID int64, prompt st
 	if direct.ForwardResult != nil && strings.TrimSpace(direct.ForwardResult.Model) != "" {
 		item.Model = strings.TrimSpace(direct.ForwardResult.Model)
 	}
+	if thumbnailData, thumbnailMimeType := buildUserImageThumbnail(imageData); len(thumbnailData) > 0 {
+		item.ThumbnailData = thumbnailData
+		item.ThumbnailMimeType = thumbnailMimeType
+	}
 
 	if err := s.repo.Create(ctx, item); err != nil {
 		return nil, fmt.Errorf("create user image generation: %w", err)
@@ -162,6 +263,32 @@ func (s *UserImageService) Generate(ctx context.Context, userID int64, prompt st
 		return nil, fmt.Errorf("prune user image generation history: %w", err)
 	}
 	return item, nil
+}
+
+func (s *UserImageService) runGenerationJob(jobID string, userID int64, prompt string) {
+	ctx, cancel := context.WithTimeout(context.Background(), userImageJobTimeout)
+	defer cancel()
+
+	result, err := s.Generate(ctx, userID, prompt)
+	now := time.Now()
+
+	s.jobsMu.Lock()
+	defer s.jobsMu.Unlock()
+	if s.activeJobs[userID] > 0 {
+		s.activeJobs[userID]--
+	}
+	if job := s.jobs[jobID]; job != nil {
+		job.CompletedAt = now
+		if err != nil {
+			job.Status = UserImageJobStatusFailed
+			job.ErrorMessage = userImageJobErrorMessage(err)
+			job.ErrorReason = infraerrors.Reason(err)
+		} else {
+			job.Status = UserImageJobStatusSucceeded
+			job.Result = cloneUserImageGeneration(result)
+		}
+	}
+	s.pruneUserImageJobsLocked(now)
 }
 
 // ListHistory returns current user's image history metadata.
@@ -180,7 +307,20 @@ func (s *UserImageService) ListHistory(ctx context.Context, userID int64, params
 	}
 	params.SortBy = "created_at"
 	params.SortOrder = pagination.SortOrderDesc
-	return s.repo.ListByUserID(ctx, userID, params)
+	items, result, err := s.repo.ListByUserID(ctx, userID, params)
+	if err != nil {
+		return nil, nil, err
+	}
+	for i := range items {
+		if len(items[i].ThumbnailData) == 0 && len(items[i].ImageData) > 0 {
+			if thumbnailData, thumbnailMimeType := buildUserImageThumbnail(items[i].ImageData); len(thumbnailData) > 0 {
+				items[i].ThumbnailData = thumbnailData
+				items[i].ThumbnailMimeType = thumbnailMimeType
+			}
+		}
+		items[i].ImageData = nil
+	}
+	return items, result, nil
 }
 
 // GetFile returns a history image owned by current user.
@@ -302,6 +442,54 @@ func appendUserImageVisualConstraint(prompt string) string {
 	return strings.TrimSpace(prompt) + "\n\n统一视觉约束：在不覆盖以上主体要求的前提下，保持整体视觉风格统一、构图完整、光影和配色协调、细节清晰。如果用户明确指定视觉风格，以用户指定为准。"
 }
 
+func normalizeUserImagePrompt(prompt string) (string, error) {
+	normalizedPrompt := strings.TrimSpace(prompt)
+	if normalizedPrompt == "" {
+		return "", ErrUserImagePromptRequired
+	}
+	if len([]rune(normalizedPrompt)) > UserImagePromptMaxLength {
+		return "", ErrUserImagePromptTooLong
+	}
+	return normalizedPrompt, nil
+}
+
+func buildUserImageThumbnail(imageData []byte) ([]byte, string) {
+	if len(imageData) == 0 {
+		return nil, ""
+	}
+	src, _, err := image.Decode(bytes.NewReader(imageData))
+	if err != nil {
+		return nil, ""
+	}
+	bounds := src.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+	if width <= 0 || height <= 0 {
+		return nil, ""
+	}
+
+	targetWidth, targetHeight := width, height
+	if width > userImageThumbnailMaxDim || height > userImageThumbnailMaxDim {
+		if width >= height {
+			targetWidth = userImageThumbnailMaxDim
+			targetHeight = max(1, height*userImageThumbnailMaxDim/width)
+		} else {
+			targetHeight = userImageThumbnailMaxDim
+			targetWidth = max(1, width*userImageThumbnailMaxDim/height)
+		}
+	}
+
+	dst := image.NewRGBA(image.Rect(0, 0, targetWidth, targetHeight))
+	stddraw.Draw(dst, dst.Bounds(), &image.Uniform{C: color.White}, image.Point{}, stddraw.Src)
+	xdraw.CatmullRom.Scale(dst, dst.Bounds(), src, bounds, stddraw.Over, nil)
+
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, dst, &jpeg.Options{Quality: userImageThumbnailQuality}); err != nil {
+		return nil, ""
+	}
+	return buf.Bytes(), "image/jpeg"
+}
+
 func extractUserImageFromOpenAIResponse(body []byte) ([]byte, string, string, error) {
 	if len(body) == 0 || !gjson.ValidBytes(body) {
 		return nil, "", "", ErrUserImageNoOutput
@@ -400,4 +588,62 @@ func userImageShanghaiDayAndTTL(now time.Time) (string, time.Duration) {
 		ttl = 24 * time.Hour
 	}
 	return localNow.Format("2006-01-02"), ttl
+}
+
+func newUserImageJobID() string {
+	var raw [12]byte
+	if _, err := rand.Read(raw[:]); err == nil {
+		return "img_" + hex.EncodeToString(raw[:])
+	}
+	return fmt.Sprintf("img_%d", time.Now().UnixNano())
+}
+
+func cloneUserImageJob(job *UserImageJob) *UserImageJob {
+	if job == nil {
+		return nil
+	}
+	cloned := *job
+	cloned.Result = cloneUserImageGeneration(job.Result)
+	return &cloned
+}
+
+func cloneUserImageGeneration(item *UserImageGeneration) *UserImageGeneration {
+	if item == nil {
+		return nil
+	}
+	cloned := *item
+	if item.RevisedPrompt != nil {
+		revisedPrompt := *item.RevisedPrompt
+		cloned.RevisedPrompt = &revisedPrompt
+	}
+	cloned.ImageData = append([]byte(nil), item.ImageData...)
+	cloned.ThumbnailData = append([]byte(nil), item.ThumbnailData...)
+	return &cloned
+}
+
+func (s *UserImageService) pruneUserImageJobsLocked(now time.Time) {
+	for id, job := range s.jobs {
+		if job == nil {
+			delete(s.jobs, id)
+			continue
+		}
+		if job.Status == UserImageJobStatusRunning {
+			continue
+		}
+		completedAt := job.CompletedAt
+		if completedAt.IsZero() {
+			completedAt = job.CreatedAt
+		}
+		if now.Sub(completedAt) > userImageJobRetention {
+			delete(s.jobs, id)
+		}
+	}
+}
+
+func userImageJobErrorMessage(err error) string {
+	message := strings.TrimSpace(infraerrors.Message(err))
+	if message == "" || message == infraerrors.UnknownMessage {
+		return "图片生成失败，请稍后重试"
+	}
+	return message
 }
