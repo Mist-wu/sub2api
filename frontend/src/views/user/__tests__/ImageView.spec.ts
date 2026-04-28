@@ -169,4 +169,138 @@ describe('ImageView', () => {
     expect(showSuccess).toHaveBeenCalledWith('Image task started')
     expect(window.localStorage.getItem('sub2api:image-generation-jobs')).not.toContain('image_base64')
   })
+
+  it('does not keep a failed current-result card when starting a task is rejected', async () => {
+    generate.mockRejectedValue({
+      message: 'Wait for one to finish',
+      reason: 'IMAGE_CONCURRENCY_LIMIT_EXCEEDED',
+    })
+
+    const wrapper = mount(ImageView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+        },
+      },
+    })
+    await flushPromises()
+
+    await wrapper.find('textarea').setValue('cat')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(generate).toHaveBeenCalledOnce()
+    expect(wrapper.text()).toContain('Wait for one to finish')
+    expect(wrapper.text()).toContain('No image yet')
+    expect(window.localStorage.getItem('sub2api:image-generation-jobs')).not.toContain('cat')
+  })
+
+  it('ignores duplicate submits while the start request is still pending', async () => {
+    let resolveGenerate: (value: unknown) => void = () => {}
+    generate.mockReturnValue(new Promise((resolve) => {
+      resolveGenerate = resolve
+    }))
+
+    const wrapper = mount(ImageView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+        },
+      },
+    })
+    await flushPromises()
+
+    await wrapper.find('textarea').setValue('same prompt')
+    await wrapper.find('form').trigger('submit.prevent')
+    await wrapper.find('form').trigger('submit.prevent')
+
+    expect(generate).toHaveBeenCalledOnce()
+    resolveGenerate({
+      job_id: 'job-same',
+      prompt: 'same prompt',
+      status: 'running',
+      created_at: '2026-04-28T00:00:00Z',
+      started_at: '2026-04-28T00:00:00Z',
+    })
+    await flushPromises()
+  })
+
+  it('drops stale in-flight jobs after a refresh', async () => {
+    const oldStartedAt = new Date(Date.now() - 13 * 60 * 1000).toISOString()
+    window.localStorage.setItem(
+      'sub2api:image-generation-jobs',
+      JSON.stringify([
+        {
+          localId: 'local_old',
+          jobId: 'img_old',
+          prompt: 'old prompt',
+          status: 'running',
+          createdAt: oldStartedAt,
+          startedAt: oldStartedAt,
+          elapsedSeconds: 780,
+        },
+      ])
+    )
+
+    const wrapper = mount(ImageView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+        },
+      },
+    })
+    await flushPromises()
+
+    expect(getGenerationJob).not.toHaveBeenCalled()
+    expect(wrapper.text()).not.toContain('old prompt')
+    expect(wrapper.text()).toContain('No image yet')
+    expect(window.localStorage.getItem('sub2api:image-generation-jobs')).toBe('[]')
+  })
+
+  it('limits the current result list to active and recent cards', async () => {
+    window.localStorage.setItem(
+      'sub2api:image-generation-jobs',
+      JSON.stringify([
+        successfulStoredJob('local_1', 1, 'first'),
+        successfulStoredJob('local_2', 2, 'second'),
+        successfulStoredJob('local_3', 3, 'third'),
+        successfulStoredJob('local_4', 4, 'fourth'),
+      ])
+    )
+
+    const wrapper = mount(ImageView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+        },
+      },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('first')
+    expect(wrapper.text()).toContain('second')
+    expect(wrapper.text()).toContain('third')
+    expect(wrapper.text()).not.toContain('fourth')
+  })
 })
+
+function successfulStoredJob(localId: string, id: number, prompt: string) {
+  return {
+    localId,
+    jobId: `img_${id}`,
+    prompt,
+    status: 'succeeded',
+    createdAt: '2026-04-28T00:00:00Z',
+    completedAt: '2026-04-28T00:00:10Z',
+    elapsedSeconds: 10,
+    result: {
+      id,
+      prompt,
+      model: 'gpt-image-2',
+      mime_type: 'image/png',
+      thumbnail_mime_type: 'image/jpeg',
+      thumbnail_base64: `thumb-${id}`,
+      created_at: '2026-04-28T00:00:10Z',
+    },
+  }
+}

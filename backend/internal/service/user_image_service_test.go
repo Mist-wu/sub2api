@@ -55,3 +55,28 @@ func TestBuildUserImageThumbnailCompressesImage(t *testing.T) {
 	require.LessOrEqual(t, decoded.Bounds().Dx(), userImageThumbnailMaxDim)
 	require.LessOrEqual(t, decoded.Bounds().Dy(), userImageThumbnailMaxDim)
 }
+
+func TestFindActiveUserImageJobLockedDeduplicatesPrompt(t *testing.T) {
+	svc := NewUserImageService(nil, nil, nil, nil)
+	svc.jobs["img_running"] = &UserImageJob{
+		ID:     "img_running",
+		UserID: 7,
+		Prompt: "小猫",
+		Status: UserImageJobStatusRunning,
+	}
+	svc.jobs["img_other_user"] = &UserImageJob{
+		ID:     "img_other_user",
+		UserID: 8,
+		Prompt: "小猫",
+		Status: UserImageJobStatusRunning,
+	}
+	svc.jobs["img_done"] = &UserImageJob{
+		ID:     "img_done",
+		UserID: 7,
+		Prompt: "小猫",
+		Status: UserImageJobStatusSucceeded,
+	}
+
+	require.Equal(t, "img_running", svc.findActiveUserImageJobLocked(7, " 小猫 ").ID)
+	require.Nil(t, svc.findActiveUserImageJobLocked(7, "小狗"))
+}

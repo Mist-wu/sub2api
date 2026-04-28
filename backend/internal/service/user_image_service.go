@@ -36,11 +36,10 @@ const (
 	UserImageHistoryLimit     = 100
 	UserImagePromptMaxLength  = 4000
 
-	userImageGenerationLimitTTL = 15 * time.Minute
-	userImageJobTimeout         = 10 * time.Minute
-	userImageJobRetention       = time.Hour
-	userImageThumbnailMaxDim    = 360
-	userImageThumbnailQuality   = 82
+	userImageJobTimeout       = 10 * time.Minute
+	userImageJobRetention     = time.Hour
+	userImageThumbnailMaxDim  = 360
+	userImageThumbnailQuality = 82
 )
 
 var (
@@ -158,6 +157,10 @@ func (s *UserImageService) StartGenerationJob(ctx context.Context, userID int64,
 
 	s.jobsMu.Lock()
 	s.pruneUserImageJobsLocked(now)
+	if existing := s.findActiveUserImageJobLocked(userID, normalizedPrompt); existing != nil {
+		s.jobsMu.Unlock()
+		return cloneUserImageJob(existing), nil
+	}
 	if s.activeJobs[userID] >= UserImageConcurrencyLimit {
 		s.jobsMu.Unlock()
 		return nil, ErrUserImageConcurrency
@@ -212,11 +215,6 @@ func (s *UserImageService) Generate(ctx context.Context, userID int64, prompt st
 	now := time.Now()
 	day, ttl := userImageShanghaiDayAndTTL(now)
 	if s.limitStore != nil {
-		release, err := s.limitStore.AcquireConcurrency(ctx, userID, UserImageConcurrencyLimit, userImageGenerationLimitTTL)
-		if err != nil {
-			return nil, err
-		}
-		defer release()
 		if err := s.limitStore.ReserveDaily(ctx, userID, day, UserImageDailyLimit, ttl); err != nil {
 			return nil, err
 		}
@@ -647,6 +645,26 @@ func (s *UserImageService) pruneUserImageJobsLocked(now time.Time) {
 			delete(s.jobs, id)
 		}
 	}
+}
+
+func (s *UserImageService) findActiveUserImageJobLocked(userID int64, prompt string) *UserImageJob {
+	normalizedPrompt := strings.TrimSpace(prompt)
+	if s == nil || normalizedPrompt == "" {
+		return nil
+	}
+	for _, job := range s.jobs {
+		if job == nil || job.UserID != userID || !isActiveUserImageJobStatus(job.Status) {
+			continue
+		}
+		if strings.TrimSpace(job.Prompt) == normalizedPrompt {
+			return job
+		}
+	}
+	return nil
+}
+
+func isActiveUserImageJobStatus(status UserImageJobStatus) bool {
+	return status == UserImageJobStatusRunning
 }
 
 func userImageJobErrorMessage(err error) string {

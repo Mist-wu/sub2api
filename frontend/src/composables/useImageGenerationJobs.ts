@@ -22,6 +22,7 @@ export interface ImageGenerationClientJob {
 const STORAGE_KEY = 'sub2api:image-generation-jobs'
 const POLL_INTERVAL_MS = 2500
 const MAX_STORED_JOBS = 20
+const MAX_ACTIVE_JOB_AGE_MS = 12 * 60 * 1000
 
 const state = reactive({
   hydrated: false,
@@ -32,6 +33,7 @@ const state = reactive({
 
 let ticker: number | undefined
 const pollingLocalIds = new Set<string>()
+const startingPrompts = new Set<string>()
 
 const activeJobCount = computed(() => state.jobs.filter((job) => isActiveStatus(job.status)).length)
 const jobs = computed(() => state.jobs)
@@ -57,10 +59,18 @@ export async function startImageJob(prompt: string): Promise<ImageGenerationClie
   if (!normalizedPrompt) {
     throw new Error('IMAGE_PROMPT_REQUIRED')
   }
+  const existingActiveJob = findActiveJobByPrompt(normalizedPrompt)
+  if (existingActiveJob) {
+    return existingActiveJob
+  }
+  if (startingPrompts.has(normalizedPrompt)) {
+    throw new Error('IMAGE_REQUEST_IN_PROGRESS')
+  }
   if (activeJobCount.value >= MAX_CONCURRENT_IMAGE_JOBS) {
     throw new Error('IMAGE_CONCURRENCY_LIMIT_EXCEEDED')
   }
 
+  startingPrompts.add(normalizedPrompt)
   const now = new Date().toISOString()
   const localJob: ImageGenerationClientJob = {
     localId: createLocalJobId(),
@@ -82,9 +92,15 @@ export async function startImageJob(prompt: string): Promise<ImageGenerationClie
       void pollImageJob(localJob.localId)
     }
   } catch (error) {
-    markJobFailed(localJob.localId, getErrorMessage(error) || 'IMAGE_GENERATION_FAILED')
+    if (localJob.jobId) {
+      markJobFailed(localJob.localId, getErrorMessage(error) || 'IMAGE_GENERATION_FAILED')
+    } else {
+      removeLocalJob(localJob.localId)
+    }
     persistJobs()
     throw error
+  } finally {
+    startingPrompts.delete(normalizedPrompt)
   }
 
   return localJob
@@ -113,6 +129,7 @@ export function resetImageGenerationJobsForTest() {
   state.jobs.splice(0, state.jobs.length)
   state.lastCompletedAt = 0
   pollingLocalIds.clear()
+  startingPrompts.clear()
   stopTicker()
 }
 
@@ -140,6 +157,12 @@ async function pollImageJob(localId: string) {
           return
         }
       } catch (error) {
+        if (getErrorReason(error) === 'IMAGE_HISTORY_NOT_FOUND') {
+          removeLocalJob(localId)
+          state.lastCompletedAt = Date.now()
+          persistJobs()
+          return
+        }
         failures += 1
         if (failures >= 3) {
           markJobFailed(localId, getErrorMessage(error) || 'IMAGE_POLL_FAILED')
@@ -187,6 +210,14 @@ function markJobFailed(localId: string, message: string) {
   job.errorMessage = message
   job.completedAt = new Date().toISOString()
   state.lastCompletedAt = Date.now()
+  ensureTicker()
+}
+
+function removeLocalJob(localId: string) {
+  const index = state.jobs.findIndex((job) => job.localId === localId)
+  if (index >= 0) {
+    state.jobs.splice(index, 1)
+  }
   ensureTicker()
 }
 
@@ -276,6 +307,21 @@ function sanitizeStoredJob(job: ImageGenerationClientJob | null | undefined): Im
   if (!job || typeof job !== 'object' || !job.localId || !job.prompt || !job.status || !job.createdAt) {
     return null
   }
+  if (!isKnownStatus(job.status)) {
+    return null
+  }
+  if (isActiveStatus(job.status) && !job.jobId) {
+    return null
+  }
+  if (isActiveStatus(job.status) && isStaleActiveJob(job)) {
+    return null
+  }
+  if (job.status === 'failed' && !job.result) {
+    return null
+  }
+  if (job.status === 'succeeded' && !job.result?.id) {
+    return null
+  }
   return {
     ...job,
     result: job.result ? sanitizeGeneration(job.result) : undefined,
@@ -288,6 +334,23 @@ function sanitizeGeneration(result: UserImageGeneration): UserImageGeneration {
   return rest
 }
 
+function findActiveJobByPrompt(prompt: string) {
+  const normalizedPrompt = prompt.trim()
+  return state.jobs.find((job) => isActiveStatus(job.status) && job.prompt.trim() === normalizedPrompt)
+}
+
+function isKnownStatus(status: string): status is ImageGenerationClientJobStatus {
+  return status === 'submitting' || status === 'running' || status === 'succeeded' || status === 'failed'
+}
+
+function isStaleActiveJob(job: ImageGenerationClientJob) {
+  const started = Date.parse(job.startedAt || job.createdAt)
+  if (!Number.isFinite(started)) {
+    return true
+  }
+  return Date.now() - started > MAX_ACTIVE_JOB_AGE_MS
+}
+
 function wait(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
 }
@@ -295,6 +358,13 @@ function wait(ms: number) {
 function getErrorMessage(error: unknown) {
   if (error && typeof error === 'object' && 'message' in error) {
     return String((error as { message?: unknown }).message || '').trim()
+  }
+  return ''
+}
+
+function getErrorReason(error: unknown) {
+  if (error && typeof error === 'object' && 'reason' in error) {
+    return String((error as { reason?: unknown }).reason || '').trim()
   }
   return ''
 }

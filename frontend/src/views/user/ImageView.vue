@@ -36,7 +36,7 @@
                 :disabled="!canSubmit"
               >
                 <Icon name="sparkles" size="sm" class="mr-2" />
-                {{ activeJobCount >= maxConcurrentJobs ? t('image.concurrencyFull') : t('image.generate') }}
+                {{ isSubmitting ? t('image.generating') : activeJobCount >= maxConcurrentJobs ? t('image.concurrencyFull') : t('image.generate') }}
               </button>
               <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('image.concurrentHint', { max: maxConcurrentJobs }) }}</p>
             </div>
@@ -105,8 +105,8 @@
                       </span>
                     </div>
 
-                    <p class="break-words text-sm font-medium text-gray-800 dark:text-dark-100">{{ card.prompt }}</p>
-                    <p v-if="card.revisedPrompt" class="mt-3 break-words text-xs leading-5 text-gray-500 dark:text-dark-400">
+                    <p class="result-prompt break-words text-sm font-medium text-gray-800 dark:text-dark-100">{{ card.prompt }}</p>
+                    <p v-if="card.revisedPrompt" class="result-revised-prompt mt-3 break-words text-xs leading-5 text-gray-500 dark:text-dark-400">
                       {{ t('image.revisedPrompt') }}: {{ card.revisedPrompt }}
                     </p>
                     <p v-if="card.errorMessage" class="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
@@ -214,17 +214,25 @@ const { t, locale } = useI18n()
 const appStore = useAppStore()
 const { jobs, activeJobCount, lastCompletedAt, maxConcurrentJobs, startImageJob } = useImageGenerationJobs()
 
+const MAX_CURRENT_RESULT_CARDS = 3
+
 const prompt = ref('')
 const promptError = ref('')
 const errorMessage = ref('')
 const historyItems = ref<UserImageHistoryItem[]>([])
 const historyLoading = ref(false)
+const isSubmitting = ref(false)
 const selectedHistory = ref<UserImageHistoryItem | null>(null)
 
 const trimmedPrompt = computed(() => prompt.value.trim())
-const canSubmit = computed(() => Boolean(trimmedPrompt.value) && activeJobCount.value < maxConcurrentJobs)
+const canSubmit = computed(() => Boolean(trimmedPrompt.value) && !isSubmitting.value && activeJobCount.value < maxConcurrentJobs)
+const visibleJobs = computed(() => {
+  const active = jobs.value.filter(isActiveJob)
+  const recent = jobs.value.filter((job) => !isActiveJob(job) && shouldShowCompletedJob(job))
+  return [...active, ...recent].slice(0, MAX_CURRENT_RESULT_CARDS)
+})
 const resultCards = computed<ResultCard[]>(() => {
-  const cards = jobs.value.map(jobToResultCard)
+  const cards = visibleJobs.value.map(jobToResultCard)
   if (selectedHistory.value && !cards.some((card) => card.imageId === selectedHistory.value?.id)) {
     cards.unshift(historyToResultCard(selectedHistory.value))
   }
@@ -253,6 +261,7 @@ async function handleGenerate() {
     return
   }
 
+  isSubmitting.value = true
   try {
     await startImageJob(trimmedPrompt.value)
     prompt.value = ''
@@ -261,6 +270,8 @@ async function handleGenerate() {
     const message = mapImageErrorMessage(error)
     errorMessage.value = message
     appStore.showError(message)
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -324,6 +335,14 @@ function historyToResultCard(item: UserImageHistoryItem): ResultCard {
     elapsedSeconds: 0,
     createdAt: item.created_at,
   }
+}
+
+function isActiveJob(job: ImageGenerationClientJob) {
+  return job.status === 'submitting' || job.status === 'running'
+}
+
+function shouldShowCompletedJob(job: ImageGenerationClientJob) {
+  return job.status === 'succeeded' || Boolean(job.errorMessage)
 }
 
 function thumbnailSrc(item: Pick<UserImageHistoryItem, 'thumbnail_base64' | 'thumbnail_mime_type' | 'mime_type'>) {
@@ -405,6 +424,9 @@ function mapImageErrorMessage(error: unknown) {
   if (message === 'IMAGE_PROMPT_REQUIRED') {
     return t('image.promptRequired')
   }
+  if (message === 'IMAGE_REQUEST_IN_PROGRESS') {
+    return t('image.generateQueued')
+  }
   return message || t('image.generateFailed')
 }
 
@@ -423,5 +445,20 @@ function getErrorMessage(error: unknown) {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.result-prompt,
+.result-revised-prompt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.result-prompt {
+  -webkit-line-clamp: 2;
+}
+
+.result-revised-prompt {
+  -webkit-line-clamp: 4;
 }
 </style>
