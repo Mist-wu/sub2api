@@ -71,6 +71,18 @@ func (r *userImageGenerationRepository) ListByUserID(ctx context.Context, userID
 	}
 	rows, err := r.client.UserImageGeneration.Query().
 		Where(dbuserimagegeneration.UserIDEQ(userID)).
+		Select(
+			dbuserimagegeneration.FieldID,
+			dbuserimagegeneration.FieldUserID,
+			dbuserimagegeneration.FieldPrompt,
+			dbuserimagegeneration.FieldRevisedPrompt,
+			dbuserimagegeneration.FieldModel,
+			dbuserimagegeneration.FieldMimeType,
+			dbuserimagegeneration.FieldImageSha256,
+			dbuserimagegeneration.FieldThumbnailData,
+			dbuserimagegeneration.FieldThumbnailMimeType,
+			dbuserimagegeneration.FieldCreatedAt,
+		).
 		Order(dbent.Desc(dbuserimagegeneration.FieldCreatedAt), dbent.Desc(dbuserimagegeneration.FieldID)).
 		Offset(params.Offset()).
 		Limit(params.Limit()).
@@ -109,6 +121,21 @@ func (r *userImageGenerationRepository) GetByID(ctx context.Context, id int64) (
 	}
 	item := convertUserImageGeneration(row, true)
 	return &item, nil
+}
+
+func (r *userImageGenerationRepository) UpdateThumbnail(ctx context.Context, id int64, userID int64, thumbnailData []byte, thumbnailMimeType string) error {
+	if r == nil || r.client == nil {
+		return fmt.Errorf("nil user image generation repository")
+	}
+	if id <= 0 || userID <= 0 || len(thumbnailData) == 0 {
+		return nil
+	}
+	_, err := r.client.UserImageGeneration.Update().
+		Where(dbuserimagegeneration.IDEQ(id), dbuserimagegeneration.UserIDEQ(userID)).
+		SetThumbnailData(thumbnailData).
+		SetThumbnailMimeType(thumbnailMimeType).
+		Save(ctx)
+	return err
 }
 
 func (r *userImageGenerationRepository) DeleteOlderThanUserLimit(ctx context.Context, userID int64, keep int) error {

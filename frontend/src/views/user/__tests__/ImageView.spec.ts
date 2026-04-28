@@ -167,5 +167,6 @@ describe('ImageView', () => {
     expect(wrapper.find('img').attributes('src')).toContain('data:image/jpeg;base64,thumb')
     expect(wrapper.text()).toContain('cinematic glass city')
     expect(showSuccess).toHaveBeenCalledWith('Image task started')
+    expect(window.localStorage.getItem('sub2api:image-generation-jobs')).not.toContain('image_base64')
   })
 })

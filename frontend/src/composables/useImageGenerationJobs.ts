@@ -167,7 +167,7 @@ function applyRemoteJob(localId: string, remoteJob: UserImageGenerationJob) {
   job.errorMessage = remoteJob.error_message
   job.errorReason = remoteJob.error_reason
   if (remoteJob.result) {
-    job.result = remoteJob.result
+    job.result = sanitizeGeneration(remoteJob.result)
   }
 
   if (job.status === 'succeeded' || job.status === 'failed') {
@@ -201,7 +201,11 @@ function hydrateJobs() {
     if (raw) {
       const parsed = JSON.parse(raw) as ImageGenerationClientJob[]
       if (Array.isArray(parsed)) {
-        state.jobs.splice(0, state.jobs.length, ...parsed.slice(0, MAX_STORED_JOBS))
+        const hydratedJobs = parsed
+          .slice(0, MAX_STORED_JOBS)
+          .map(sanitizeStoredJob)
+          .filter((job): job is ImageGenerationClientJob => job !== null)
+        state.jobs.splice(0, state.jobs.length, ...hydratedJobs)
       }
     }
   } catch {
@@ -214,11 +218,13 @@ function hydrateJobs() {
     }
   })
   ensureTicker()
+  persistJobs()
 }
 
 function persistJobs() {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.jobs.slice(0, MAX_STORED_JOBS)))
+    const serializableJobs = state.jobs.slice(0, MAX_STORED_JOBS).map(sanitizeStoredJob).filter(Boolean)
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(serializableJobs))
   } catch {
     // localStorage can fail in private mode; the in-memory jobs still keep the SPA route-switch case working.
   }
@@ -264,6 +270,22 @@ function isActiveStatus(status: ImageGenerationClientJobStatus) {
 function createLocalJobId() {
   const random = Math.random().toString(16).slice(2)
   return `local_${Date.now()}_${random}`
+}
+
+function sanitizeStoredJob(job: ImageGenerationClientJob | null | undefined): ImageGenerationClientJob | null {
+  if (!job || typeof job !== 'object' || !job.localId || !job.prompt || !job.status || !job.createdAt) {
+    return null
+  }
+  return {
+    ...job,
+    result: job.result ? sanitizeGeneration(job.result) : undefined,
+    elapsedSeconds: Number.isFinite(job.elapsedSeconds) ? job.elapsedSeconds : 0,
+  }
+}
+
+function sanitizeGeneration(result: UserImageGeneration): UserImageGeneration {
+  const { image_base64: _imageBase64, ...rest } = result
+  return rest
 }
 
 function wait(ms: number) {

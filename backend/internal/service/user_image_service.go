@@ -97,6 +97,7 @@ type UserImageGenerationRepository interface {
 	Create(ctx context.Context, item *UserImageGeneration) error
 	ListByUserID(ctx context.Context, userID int64, params pagination.PaginationParams) ([]UserImageGeneration, *pagination.PaginationResult, error)
 	GetByID(ctx context.Context, id int64) (*UserImageGeneration, error)
+	UpdateThumbnail(ctx context.Context, id int64, userID int64, thumbnailData []byte, thumbnailMimeType string) error
 	DeleteOlderThanUserLimit(ctx context.Context, userID int64, keep int) error
 }
 
@@ -312,10 +313,18 @@ func (s *UserImageService) ListHistory(ctx context.Context, userID int64, params
 		return nil, nil, err
 	}
 	for i := range items {
-		if len(items[i].ThumbnailData) == 0 && len(items[i].ImageData) > 0 {
-			if thumbnailData, thumbnailMimeType := buildUserImageThumbnail(items[i].ImageData); len(thumbnailData) > 0 {
+		if len(items[i].ThumbnailData) == 0 {
+			fullItem, err := s.repo.GetByID(ctx, items[i].ID)
+			if err != nil {
+				return nil, nil, err
+			}
+			if fullItem == nil || fullItem.UserID != userID {
+				return nil, nil, ErrUserImageNotFound
+			}
+			if thumbnailData, thumbnailMimeType := buildUserImageThumbnail(fullItem.ImageData); len(thumbnailData) > 0 {
 				items[i].ThumbnailData = thumbnailData
 				items[i].ThumbnailMimeType = thumbnailMimeType
+				_ = s.repo.UpdateThumbnail(ctx, items[i].ID, userID, thumbnailData, thumbnailMimeType)
 			}
 		}
 		items[i].ImageData = nil

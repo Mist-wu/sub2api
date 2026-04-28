@@ -151,6 +151,10 @@ func (h *ImageHandler) GetHistoryFile(c *gin.Context) {
 }
 
 func toImageGenerationResponse(item *service.UserImageGeneration) imageGenerationResponse {
+	return toImageGenerationResponseWithOptions(item, false)
+}
+
+func toImageGenerationResponseWithOptions(item *service.UserImageGeneration, includeImageBase64 bool) imageGenerationResponse {
 	if item == nil {
 		return imageGenerationResponse{}
 	}
@@ -160,9 +164,11 @@ func toImageGenerationResponse(item *service.UserImageGeneration) imageGeneratio
 		RevisedPrompt:     item.RevisedPrompt,
 		Model:             item.Model,
 		MimeType:          item.MimeType,
-		ImageBase64:       base64.StdEncoding.EncodeToString(item.ImageData),
 		ThumbnailMimeType: item.ThumbnailMimeType,
 		CreatedAt:         item.CreatedAt.UTC().Format(time.RFC3339Nano),
+	}
+	if includeImageBase64 && len(item.ImageData) > 0 {
+		out.ImageBase64 = base64.StdEncoding.EncodeToString(item.ImageData)
 	}
 	if len(item.ThumbnailData) > 0 {
 		out.ThumbnailBase64 = base64.StdEncoding.EncodeToString(item.ThumbnailData)
