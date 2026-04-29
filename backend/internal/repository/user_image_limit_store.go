@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -26,6 +27,7 @@ type userImageLimitStore struct {
 	mu          sync.Mutex
 	dailyCounts map[string]int
 	active      map[int64]int
+	jobs        map[string]*service.UserImageJob
 }
 
 // NewUserImageLimitStore creates a Redis-backed image limit store.
@@ -34,6 +36,7 @@ func NewUserImageLimitStore(rdb *redis.Client) service.UserImageLimitStore {
 		rdb:         rdb,
 		dailyCounts: make(map[string]int),
 		active:      make(map[int64]int),
+		jobs:        make(map[string]*service.UserImageJob),
 	}
 }
 
@@ -114,9 +117,82 @@ func (s *userImageLimitStore) AcquireConcurrency(ctx context.Context, userID int
 	}, nil
 }
 
+func (s *userImageLimitStore) StoreJob(ctx context.Context, job *service.UserImageJob, ttl time.Duration) error {
+	if s == nil || job == nil || job.ID == "" {
+		return nil
+	}
+	stored := cloneUserImageJobForLimitStore(job)
+	key := fmt.Sprintf("%s:job:%s", userImageLimitRedisPrefix, stored.ID)
+	if s.rdb != nil {
+		payload, err := json.Marshal(stored)
+		if err != nil {
+			return err
+		}
+		if ttl <= 0 {
+			return s.rdb.Set(ctx, key, payload, 0).Err()
+		}
+		return s.rdb.Set(ctx, key, payload, ttl).Err()
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.jobs[key] = stored
+	return nil
+}
+
+func (s *userImageLimitStore) GetJob(ctx context.Context, userID int64, jobID string) (*service.UserImageJob, error) {
+	if s == nil || jobID == "" {
+		return nil, service.ErrUserImageNotFound
+	}
+	key := fmt.Sprintf("%s:job:%s", userImageLimitRedisPrefix, jobID)
+	if s.rdb != nil {
+		payload, err := s.rdb.Get(ctx, key).Bytes()
+		if err == redis.Nil {
+			return nil, service.ErrUserImageNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		var job service.UserImageJob
+		if err := json.Unmarshal(payload, &job); err != nil {
+			return nil, err
+		}
+		if job.UserID != userID {
+			return nil, service.ErrUserImageNotFound
+		}
+		return cloneUserImageJobForLimitStore(&job), nil
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	job := s.jobs[key]
+	if job == nil || job.UserID != userID {
+		return nil, service.ErrUserImageNotFound
+	}
+	return cloneUserImageJobForLimitStore(job), nil
+}
+
 func decrementUserImageLimitKey(ctx context.Context, rdb *redis.Client, key string) error {
 	if rdb == nil {
 		return nil
 	}
 	return userImageLimitDecrementScript.Run(ctx, rdb, []string{key}).Err()
+}
+
+func cloneUserImageJobForLimitStore(job *service.UserImageJob) *service.UserImageJob {
+	if job == nil {
+		return nil
+	}
+	cloned := *job
+	if job.Result != nil {
+		result := *job.Result
+		if job.Result.RevisedPrompt != nil {
+			revisedPrompt := *job.Result.RevisedPrompt
+			result.RevisedPrompt = &revisedPrompt
+		}
+		result.ImageData = nil
+		result.ThumbnailData = append([]byte(nil), job.Result.ThumbnailData...)
+		cloned.Result = &result
+	}
+	return &cloned
 }

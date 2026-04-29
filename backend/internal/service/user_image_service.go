@@ -23,8 +23,10 @@ import (
 	"time"
 
 	infraerrors "github.com/Mist-wu/sub2api/internal/pkg/errors"
+	"github.com/Mist-wu/sub2api/internal/pkg/logger"
 	"github.com/Mist-wu/sub2api/internal/pkg/pagination"
 	"github.com/tidwall/gjson"
+	"go.uber.org/zap"
 	xdraw "golang.org/x/image/draw"
 	_ "golang.org/x/image/webp"
 )
@@ -38,6 +40,8 @@ const (
 
 	userImageJobTimeout       = 10 * time.Minute
 	userImageJobRetention     = time.Hour
+	userImageJobStateTTL      = userImageJobTimeout + userImageJobRetention
+	userImageConcurrencyTTL   = userImageJobTimeout + 2*time.Minute
 	userImageThumbnailMaxDim  = 360
 	userImageThumbnailQuality = 82
 )
@@ -52,6 +56,8 @@ var (
 	ErrUserImageNoOutput       = infraerrors.ServiceUnavailable("IMAGE_UPSTREAM_EMPTY_OUTPUT", "上游没有返回可保存的图片")
 	ErrUserImageNotFound       = infraerrors.NotFound("IMAGE_HISTORY_NOT_FOUND", "图片历史不存在")
 )
+
+const userImageVisualConstraint = "统一视觉约束：在不覆盖以上主体要求的前提下，保持整体视觉风格统一、构图完整、光影和配色协调、细节清晰。如果用户明确指定视觉风格，以用户指定为准。"
 
 // UserImageGeneration is the persisted free image generation record.
 type UserImageGeneration struct {
@@ -104,6 +110,8 @@ type UserImageGenerationRepository interface {
 type UserImageLimitStore interface {
 	ReserveDaily(ctx context.Context, userID int64, day string, limit int, ttl time.Duration) error
 	AcquireConcurrency(ctx context.Context, userID int64, limit int, ttl time.Duration) (func(), error)
+	StoreJob(ctx context.Context, job *UserImageJob, ttl time.Duration) error
+	GetJob(ctx context.Context, userID int64, jobID string) (*UserImageJob, error)
 }
 
 // UserImageService handles JWT-only free image generation and history.
@@ -113,9 +121,8 @@ type UserImageService struct {
 	apiKeyService *APIKeyService
 	openaiGateway *OpenAIGatewayService
 
-	jobsMu     sync.Mutex
-	jobs       map[string]*UserImageJob
-	activeJobs map[int64]int
+	jobsMu sync.Mutex
+	jobs   map[string]*UserImageJob
 }
 
 // NewUserImageService creates a user image service.
@@ -131,7 +138,6 @@ func NewUserImageService(
 		apiKeyService: apiKeyService,
 		openaiGateway: openaiGateway,
 		jobs:          make(map[string]*UserImageJob),
-		activeJobs:    make(map[int64]int),
 	}
 }
 
@@ -155,21 +161,38 @@ func (s *UserImageService) StartGenerationJob(ctx context.Context, userID int64,
 		StartedAt: now,
 	}
 
+	if existing := s.findActiveUserImageJob(userID, normalizedPrompt); existing != nil {
+		return existing, nil
+	}
+
+	var releaseConcurrency func()
+	if s.limitStore != nil {
+		release, err := s.limitStore.AcquireConcurrency(ctx, userID, UserImageConcurrencyLimit, userImageConcurrencyTTL)
+		if err != nil {
+			return nil, err
+		}
+		releaseConcurrency = release
+	}
+
 	s.jobsMu.Lock()
 	s.pruneUserImageJobsLocked(now)
 	if existing := s.findActiveUserImageJobLocked(userID, normalizedPrompt); existing != nil {
 		s.jobsMu.Unlock()
+		releaseUserImageConcurrency(releaseConcurrency)
 		return cloneUserImageJob(existing), nil
 	}
-	if s.activeJobs[userID] >= UserImageConcurrencyLimit {
-		s.jobsMu.Unlock()
-		return nil, ErrUserImageConcurrency
-	}
-	s.activeJobs[userID]++
 	s.jobs[job.ID] = job
 	s.jobsMu.Unlock()
 
-	go s.runGenerationJob(job.ID, userID, normalizedPrompt)
+	if err := s.storeUserImageJob(ctx, job); err != nil {
+		s.jobsMu.Lock()
+		delete(s.jobs, job.ID)
+		s.jobsMu.Unlock()
+		releaseUserImageConcurrency(releaseConcurrency)
+		return nil, fmt.Errorf("store user image generation job: %w", err)
+	}
+
+	go s.runGenerationJob(job.ID, userID, normalizedPrompt, releaseConcurrency)
 
 	return cloneUserImageJob(job), nil
 }
@@ -183,12 +206,29 @@ func (s *UserImageService) GetGenerationJob(ctx context.Context, userID int64, j
 	if jobID == "" {
 		return nil, ErrUserImageNotFound
 	}
-	s.jobsMu.Lock()
-	defer s.jobsMu.Unlock()
-	s.pruneUserImageJobsLocked(time.Now())
-	job := s.jobs[jobID]
-	if job == nil || job.UserID != userID {
+	if job := s.getLocalUserImageJob(userID, jobID); job != nil {
+		return job, nil
+	}
+
+	job, err := s.getStoredUserImageJob(ctx, userID, jobID)
+	if err != nil {
+		return nil, err
+	}
+	if job == nil {
 		return nil, ErrUserImageNotFound
+	}
+	if isStaleUserImageJob(job, time.Now()) {
+		job.Status = UserImageJobStatusFailed
+		job.ErrorMessage = "图片生成超时，请稍后重试"
+		job.ErrorReason = "IMAGE_UPSTREAM_TIMEOUT"
+		job.CompletedAt = time.Now()
+		if err := s.storeUserImageJob(ctx, job); err != nil {
+			logger.FromContext(ctx).Warn("user_image.job_timeout_store_failed",
+				zap.Int64("user_id", userID),
+				zap.String("job_id", job.ID),
+				zap.Error(err),
+			)
+		}
 	}
 	return cloneUserImageJob(job), nil
 }
@@ -264,18 +304,17 @@ func (s *UserImageService) Generate(ctx context.Context, userID int64, prompt st
 	return item, nil
 }
 
-func (s *UserImageService) runGenerationJob(jobID string, userID int64, prompt string) {
+func (s *UserImageService) runGenerationJob(jobID string, userID int64, prompt string, releaseConcurrency func()) {
+	defer releaseUserImageConcurrency(releaseConcurrency)
+
 	ctx, cancel := context.WithTimeout(context.Background(), userImageJobTimeout)
 	defer cancel()
 
 	result, err := s.Generate(ctx, userID, prompt)
 	now := time.Now()
 
+	var completedJob *UserImageJob
 	s.jobsMu.Lock()
-	defer s.jobsMu.Unlock()
-	if s.activeJobs[userID] > 0 {
-		s.activeJobs[userID]--
-	}
 	if job := s.jobs[jobID]; job != nil {
 		job.CompletedAt = now
 		if err != nil {
@@ -286,8 +325,20 @@ func (s *UserImageService) runGenerationJob(jobID string, userID int64, prompt s
 			job.Status = UserImageJobStatusSucceeded
 			job.Result = cloneUserImageGeneration(result)
 		}
+		completedJob = cloneUserImageJob(job)
 	}
 	s.pruneUserImageJobsLocked(now)
+	s.jobsMu.Unlock()
+
+	if completedJob != nil {
+		if err := s.storeUserImageJob(context.Background(), completedJob); err != nil {
+			logger.FromContext(context.Background()).Warn("user_image.job_complete_store_failed",
+				zap.Int64("user_id", userID),
+				zap.String("job_id", jobID),
+				zap.Error(err),
+			)
+		}
+	}
 }
 
 // ListHistory returns current user's image history metadata.
@@ -314,15 +365,32 @@ func (s *UserImageService) ListHistory(ctx context.Context, userID int64, params
 		if len(items[i].ThumbnailData) == 0 {
 			fullItem, err := s.repo.GetByID(ctx, items[i].ID)
 			if err != nil {
-				return nil, nil, err
+				logger.FromContext(ctx).Warn("user_image.history_thumbnail_source_failed",
+					zap.Int64("user_id", userID),
+					zap.Int64("image_id", items[i].ID),
+					zap.Error(err),
+				)
+				items[i].ImageData = nil
+				continue
 			}
 			if fullItem == nil || fullItem.UserID != userID {
-				return nil, nil, ErrUserImageNotFound
+				logger.FromContext(ctx).Warn("user_image.history_thumbnail_owner_mismatch",
+					zap.Int64("user_id", userID),
+					zap.Int64("image_id", items[i].ID),
+				)
+				items[i].ImageData = nil
+				continue
 			}
 			if thumbnailData, thumbnailMimeType := buildUserImageThumbnail(fullItem.ImageData); len(thumbnailData) > 0 {
 				items[i].ThumbnailData = thumbnailData
 				items[i].ThumbnailMimeType = thumbnailMimeType
-				_ = s.repo.UpdateThumbnail(ctx, items[i].ID, userID, thumbnailData, thumbnailMimeType)
+				if err := s.repo.UpdateThumbnail(ctx, items[i].ID, userID, thumbnailData, thumbnailMimeType); err != nil {
+					logger.FromContext(ctx).Warn("user_image.history_thumbnail_update_failed",
+						zap.Int64("user_id", userID),
+						zap.Int64("image_id", items[i].ID),
+						zap.Error(err),
+					)
+				}
 			}
 		}
 		items[i].ImageData = nil
@@ -446,7 +514,7 @@ func buildUserImageOpenAIRequest(prompt string) ([]byte, *OpenAIImagesRequest, e
 }
 
 func appendUserImageVisualConstraint(prompt string) string {
-	return strings.TrimSpace(prompt) + "\n\n统一视觉约束：在不覆盖以上主体要求的前提下，保持整体视觉风格统一、构图完整、光影和配色协调、细节清晰。如果用户明确指定视觉风格，以用户指定为准。"
+	return strings.TrimSpace(prompt) + "\n\n" + userImageVisualConstraint
 }
 
 func normalizeUserImagePrompt(prompt string) (string, error) {
@@ -454,7 +522,7 @@ func normalizeUserImagePrompt(prompt string) (string, error) {
 	if normalizedPrompt == "" {
 		return "", ErrUserImagePromptRequired
 	}
-	if len([]rune(normalizedPrompt)) > UserImagePromptMaxLength {
+	if len([]rune(appendUserImageVisualConstraint(normalizedPrompt))) > UserImagePromptMaxLength {
 		return "", ErrUserImagePromptTooLong
 	}
 	return normalizedPrompt, nil
@@ -647,6 +715,16 @@ func (s *UserImageService) pruneUserImageJobsLocked(now time.Time) {
 	}
 }
 
+func (s *UserImageService) findActiveUserImageJob(userID int64, prompt string) *UserImageJob {
+	if s == nil {
+		return nil
+	}
+	s.jobsMu.Lock()
+	defer s.jobsMu.Unlock()
+	s.pruneUserImageJobsLocked(time.Now())
+	return cloneUserImageJob(s.findActiveUserImageJobLocked(userID, prompt))
+}
+
 func (s *UserImageService) findActiveUserImageJobLocked(userID int64, prompt string) *UserImageJob {
 	normalizedPrompt := strings.TrimSpace(prompt)
 	if s == nil || normalizedPrompt == "" {
@@ -665,6 +743,63 @@ func (s *UserImageService) findActiveUserImageJobLocked(userID int64, prompt str
 
 func isActiveUserImageJobStatus(status UserImageJobStatus) bool {
 	return status == UserImageJobStatusRunning
+}
+
+func (s *UserImageService) getLocalUserImageJob(userID int64, jobID string) *UserImageJob {
+	if s == nil {
+		return nil
+	}
+	s.jobsMu.Lock()
+	defer s.jobsMu.Unlock()
+	s.pruneUserImageJobsLocked(time.Now())
+	job := s.jobs[jobID]
+	if job == nil || job.UserID != userID {
+		return nil
+	}
+	return cloneUserImageJob(job)
+}
+
+func (s *UserImageService) storeUserImageJob(ctx context.Context, job *UserImageJob) error {
+	if s == nil || s.limitStore == nil || job == nil {
+		return nil
+	}
+	return s.limitStore.StoreJob(ctx, cloneUserImageJobForStore(job), userImageJobStateTTL)
+}
+
+func (s *UserImageService) getStoredUserImageJob(ctx context.Context, userID int64, jobID string) (*UserImageJob, error) {
+	if s == nil || s.limitStore == nil {
+		return nil, ErrUserImageNotFound
+	}
+	job, err := s.limitStore.GetJob(ctx, userID, jobID)
+	if err != nil {
+		return nil, err
+	}
+	return cloneUserImageJob(job), nil
+}
+
+func cloneUserImageJobForStore(job *UserImageJob) *UserImageJob {
+	cloned := cloneUserImageJob(job)
+	if cloned != nil && cloned.Result != nil {
+		cloned.Result.ImageData = nil
+	}
+	return cloned
+}
+
+func isStaleUserImageJob(job *UserImageJob, now time.Time) bool {
+	if job == nil || job.Status != UserImageJobStatusRunning {
+		return false
+	}
+	startedAt := job.StartedAt
+	if startedAt.IsZero() {
+		startedAt = job.CreatedAt
+	}
+	return !startedAt.IsZero() && now.Sub(startedAt) > userImageJobTimeout
+}
+
+func releaseUserImageConcurrency(release func()) {
+	if release != nil {
+		release()
+	}
 }
 
 func userImageJobErrorMessage(err error) string {
