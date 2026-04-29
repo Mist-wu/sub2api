@@ -18,6 +18,9 @@ env:
   IMAGE_NAME: sub2api
   DEPLOY_DIR: /opt/sub2api
   HEALTH_URL: https://api.bupt8.com/health
+  GIT_CONFIG_COUNT: 1
+  GIT_CONFIG_KEY_0: init.defaultBranch
+  GIT_CONFIG_VALUE_0: main
 
 jobs:
   build-and-push:
