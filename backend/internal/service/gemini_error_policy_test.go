@@ -387,6 +387,7 @@ type geminiErrorPolicyRepo struct {
 	mockAccountRepoForGemini
 	setErrorCalls       int
 	setRateLimitedCalls int
+	lastRateLimitedAt   time.Time
 	setTempCalls        int
 }
 
@@ -395,12 +396,54 @@ func (r *geminiErrorPolicyRepo) SetError(_ context.Context, _ int64, _ string) e
 	return nil
 }
 
-func (r *geminiErrorPolicyRepo) SetRateLimited(_ context.Context, _ int64, _ time.Time) error {
+func (r *geminiErrorPolicyRepo) SetRateLimited(_ context.Context, _ int64, resetAt time.Time) error {
 	r.setRateLimitedCalls++
+	r.lastRateLimitedAt = resetAt
 	return nil
 }
 
 func (r *geminiErrorPolicyRepo) SetTempUnschedulable(_ context.Context, _ int64, _ time.Time, _ string) error {
 	r.setTempCalls++
 	return nil
+}
+
+func TestHandleGeminiUpstreamError_GoogleOneUsesTierCooldownFallback(t *testing.T) {
+	repo := &geminiErrorPolicyRepo{}
+	svc := &GeminiMessagesCompatService{accountRepo: repo}
+	account := &Account{
+		ID:       410,
+		Type:     AccountTypeOAuth,
+		Platform: PlatformGemini,
+		Credentials: map[string]any{
+			"oauth_type": "google_one",
+			"tier_id":    GeminiTierGoogleAIPro,
+		},
+	}
+
+	start := time.Now()
+	svc.handleGeminiUpstreamError(context.Background(), account, http.StatusTooManyRequests, http.Header{}, []byte(`{"error":{"message":"No capacity available"}}`))
+
+	require.Equal(t, 1, repo.setRateLimitedCalls)
+	require.False(t, repo.lastRateLimitedAt.IsZero())
+	require.WithinDuration(t, start.Add(5*time.Minute), repo.lastRateLimitedAt, 5*time.Second)
+}
+
+func TestHandleGeminiUpstreamError_AIStudioStillUsesDailyResetFallback(t *testing.T) {
+	repo := &geminiErrorPolicyRepo{}
+	svc := &GeminiMessagesCompatService{accountRepo: repo}
+	account := &Account{
+		ID:       641,
+		Type:     AccountTypeOAuth,
+		Platform: PlatformGemini,
+		Credentials: map[string]any{
+			"oauth_type": "ai_studio",
+			"tier_id":    GeminiTierAIStudioFree,
+		},
+	}
+
+	svc.handleGeminiUpstreamError(context.Background(), account, http.StatusTooManyRequests, http.Header{}, []byte(`{"error":{"message":"No capacity available"}}`))
+
+	require.Equal(t, 1, repo.setRateLimitedCalls)
+	require.False(t, repo.lastRateLimitedAt.IsZero())
+	require.True(t, repo.lastRateLimitedAt.After(time.Now().Add(time.Hour)), "AI Studio fallback should still wait for daily reset, got %v", repo.lastRateLimitedAt)
 }
