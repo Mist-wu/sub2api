@@ -670,6 +670,7 @@ curl "$BASE_URL/models/gemini-3.1-pro-preview:generateContent" \\
   -d '{
     "contents": [
       {
+        "role": "user",
         "parts": [
           { "text": "Reply with a short hello." }
         ]
@@ -708,6 +709,7 @@ curl "$BASE_URL/models/gemini-3.1-pro-high:generateContent" \\
   -d '{
     "contents": [
       {
+        "role": "user",
         "parts": [
           { "text": "Reply with a short hello." }
         ]
