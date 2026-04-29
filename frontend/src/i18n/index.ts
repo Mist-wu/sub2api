@@ -6,6 +6,7 @@ type LocaleMessages = Record<string, any>
 
 const LOCALE_KEY = 'sub2api_locale'
 const DEFAULT_LOCALE: LocaleCode = 'en'
+export const LOCALE_CHANGED_EVENT = 'sub2api:locale-changed'
 
 const localeLoaders: Record<LocaleCode, () => Promise<{ default: LocaleMessages }>> = {
   en: () => import('./locales/en'),
@@ -68,14 +69,7 @@ export async function setLocale(locale: string): Promise<void> {
   i18n.global.locale.value = locale
   localStorage.setItem(LOCALE_KEY, locale)
   document.documentElement.setAttribute('lang', locale)
-
-  // 同步更新浏览器页签标题，使其跟随语言切换
-  const { resolveDocumentTitle } = await import('@/router/title')
-  const { default: router } = await import('@/router')
-  const { useAppStore } = await import('@/stores/app')
-  const route = router.currentRoute.value
-  const appStore = useAppStore()
-  document.title = resolveDocumentTitle(route.meta.title, appStore.siteName, route.meta.titleKey as string)
+  window.dispatchEvent(new CustomEvent(LOCALE_CHANGED_EVENT, { detail: { locale } }))
 }
 
 export function getLocale(): LocaleCode {

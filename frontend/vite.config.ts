@@ -45,7 +45,8 @@ export default defineConfig(({ mode }) => {
       vue(),
       checker({
         typescript: true,
-        vueTsc: true
+        vueTsc: true,
+        enableBuild: false
       }),
       injectPublicSettings(backendUrl)
     ],

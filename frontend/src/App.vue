@@ -4,6 +4,7 @@ import { onMounted, onBeforeUnmount, watch } from 'vue'
 import Toast from '@/components/common/Toast.vue'
 import NavigationProgress from '@/components/common/NavigationProgress.vue'
 import { resolveDocumentTitle } from '@/router/title'
+import { LOCALE_CHANGED_EVENT } from '@/i18n'
 import AnnouncementPopup from '@/components/common/AnnouncementPopup.vue'
 import { useAppStore, useAuthStore, useSubscriptionStore, useAnnouncementStore } from '@/stores'
 import { getSetupStatus } from '@/api/setup'
@@ -29,6 +30,14 @@ function updateFavicon(logoUrl: string) {
   }
   link.type = logoUrl.endsWith('.svg') ? 'image/svg+xml' : 'image/x-icon'
   link.href = logoUrl
+}
+
+function updateDocumentTitle() {
+  document.title = resolveDocumentTitle(route.meta.title, appStore.siteName, route.meta.titleKey as string)
+}
+
+function onLocaleChanged() {
+  updateDocumentTitle()
 }
 
 // Watch for site settings changes and update favicon/title
@@ -89,9 +98,12 @@ router.afterEach(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', onVisibilityChange)
+  window.removeEventListener(LOCALE_CHANGED_EVENT, onLocaleChanged)
 })
 
 onMounted(async () => {
+  window.addEventListener(LOCALE_CHANGED_EVENT, onLocaleChanged)
+
   // Check if setup is needed
   try {
     const status = await getSetupStatus()
@@ -107,7 +119,7 @@ onMounted(async () => {
   await appStore.fetchPublicSettings()
 
   // Re-resolve document title now that siteName is available
-  document.title = resolveDocumentTitle(route.meta.title, appStore.siteName, route.meta.titleKey as string)
+  updateDocumentTitle()
 })
 </script>
 
